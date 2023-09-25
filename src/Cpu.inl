@@ -69,6 +69,8 @@ inline u16 Cpu::resolveOperand16()
     } else {
         static_assert("Addressing mode '" + stringifyAddressingMode(Mode) +"' is unsupported for resolving 16-bit operand");
     }
+
+    return operand;
 }
 
 template <AddressingMode Mode>
