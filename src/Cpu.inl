@@ -174,7 +174,7 @@ template <AddressingMode Mode>
 inline unsigned Cpu::txs()
 {
     if constexpr(Mode != AddressingMode::Implied) {
-        static_assert("TAX instruction does not support addressing mode other than Implied");
+        static_assert("TXS instruction does not support addressing mode other than Implied");
     }
     const auto& x = registers.getX();
     auto& s = registers.getS();
@@ -186,7 +186,7 @@ template <AddressingMode Mode>
 inline unsigned Cpu::tya()
 {
     if constexpr(Mode != AddressingMode::Implied) {
-        static_assert("TAX instruction does not support addressing mode other than Implied");
+        static_assert("TYA instruction does not support addressing mode other than Implied");
     }
     const auto& y = registers.getY();
     auto& accumulator = registers.getA();
