@@ -50,6 +50,15 @@ class Cpu
         template <AddressingMode Mode> unsigned inc();          // INC - Increment (mem)
         template <AddressingMode Mode> unsigned inx();          // INX - Increment X
         template <AddressingMode Mode> unsigned iny();          // INY - Increment Y
+
+        // Flag instructions
+        template <AddressingMode Mode> unsigned clc();          // CLC - Clear carry
+        template <AddressingMode Mode> unsigned cld();          // CLD - Clear decimal
+        template <AddressingMode Mode> unsigned cli();          // CLI - Clear interrupt disable
+        template <AddressingMode Mode> unsigned clv();          // CLV - Clear overflow
+        template <AddressingMode Mode> unsigned sec();          // SEC - Set carry
+        template <AddressingMode Mode> unsigned sed();          // SED - Set decimal
+        template <AddressingMode Mode> unsigned sei();          // SEI - Set interrupt disable
 };
 
 #include "Cpu.inl"

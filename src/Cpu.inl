@@ -259,3 +259,73 @@ inline unsigned Cpu::iny()
     y++;
     return 0;
 }
+
+template <AddressingMode Mode>
+inline unsigned Cpu::clc()
+{
+    if constexpr(Mode != AddressingMode::Implied) {
+        static_assert("CLC instruction does not support addressing mode other than Implied");
+    }
+    registers.getP().carry = 0;
+    return 0;
+}
+
+template <AddressingMode Mode>
+inline unsigned Cpu::cld()
+{
+    if constexpr(Mode != AddressingMode::Implied) {
+        static_assert("CLD instruction does not support addressing mode other than Implied");
+    }
+    registers.getP().decimal = 0;
+    return 0;
+}
+
+template <AddressingMode Mode>
+inline unsigned Cpu::cli()
+{
+    if constexpr(Mode != AddressingMode::Implied) {
+        static_assert("CLI instruction does not support addressing mode other than Implied");
+    }
+    registers.getP().interruptDisable = 0;
+    return 0;
+}
+
+template <AddressingMode Mode>
+inline unsigned Cpu::clv()
+{
+    if constexpr(Mode != AddressingMode::Implied) {
+        static_assert("CLV instruction does not support addressing mode other than Implied");
+    }
+    registers.getP().overflow = 0;
+    return 0;
+}
+
+template <AddressingMode Mode>
+inline unsigned Cpu::sec()
+{
+    if constexpr(Mode != AddressingMode::Implied) {
+        static_assert("SEC instruction does not support addressing mode other than Implied");
+    }
+    registers.getP().carry = 1;
+    return 0;
+}
+
+template <AddressingMode Mode>
+inline unsigned Cpu::sed()
+{
+    if constexpr(Mode != AddressingMode::Implied) {
+        static_assert("SED instruction does not support addressing mode other than Implied");
+    }
+    registers.getP().decimal = 1;
+    return 0;
+}
+
+template <AddressingMode Mode>
+inline unsigned Cpu::sei()
+{
+    if constexpr(Mode != AddressingMode::Implied) {
+        static_assert("SEI instruction does not support addressing mode other than Implied");
+    }
+    registers.getP().interruptDisable = 1;
+    return 0;
+}
