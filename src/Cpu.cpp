@@ -21,7 +21,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x05: break; // ORA zero-page
         case 0x06: break; // ASL zero-page
         case 0x07: break; // SLO zero-page [Unofficial]
-        case 0x08: break; // PHP implied
+        case 0x08: php<AddressingMode::Implied>(); break; // PHP implied
         case 0x09: break; // ORA accumulator
         case 0x0A: break; // ASL accumulator
         case 0x0B: break; // ANC immediate [Unofficial]
@@ -53,7 +53,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x25: break; // AND zero-page
         case 0x26: break; // ROL zero-page
         case 0x27: break; // RLA zero-page [Unofficial]
-        case 0x28: break; // PLP implied
+        case 0x28: plp<AddressingMode::Implied>(); break; // PLP implied
         case 0x29: break; // AND immediate
         case 0x2A: break; // ROL accumulator
         case 0x2B: break; // ANC immediate [Unofficial]
@@ -85,7 +85,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x45: break; // EOR zero-page
         case 0x46: break; // LSR zero-page
         case 0x47: break; // SRE zero-page [Unofficial]
-        case 0x48: break; // PHA implied
+        case 0x48: pha<AddressingMode::Implied>(); break; // PHA implied
         case 0x49: break; // EOR immediate
         case 0x4A: break; // LSR accumulator
         case 0x4B: break; // ALR immediate [Unofficial]
@@ -117,7 +117,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x65: break; // ADC zero-page
         case 0x66: break; // ROR zero-page
         case 0x67: break; // RRA zero-page [Unofficial]
-        case 0x68: break; // PLA implied
+        case 0x68: pla<AddressingMode::Implied>(); break; // PLA implied
         case 0x69: break; // ADC immediate
         case 0x6A: break; // ROR accumulator
         case 0x6B: break; // ARR immediate [Unofficial]
@@ -289,4 +289,16 @@ u16 Cpu::fetchImmedate16()
 {
     return static_cast<u16>(fetchImmedate8()) 
         + static_cast<u16>(fetchImmedate8() << 8);
+}
+
+u8 Cpu::popFromStack()
+{
+    auto& s = registers.getS();
+    return mmu->readFromMemory(0x100 | ++s);
+}
+
+void Cpu::pushIntoStack(u8 value)
+{
+    auto& s = registers.getS();
+    mmu->writeIntoMemory(0x100 | s--, value);
 }

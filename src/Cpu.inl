@@ -329,3 +329,47 @@ inline unsigned Cpu::sei()
     registers.getP().interruptDisable = 1;
     return 0;
 }
+
+template <AddressingMode Mode>
+inline unsigned Cpu::pha()
+{
+    if constexpr(Mode != AddressingMode::Implied) {
+        static_assert("PHA instruction does not support addressing mode other than Implied");
+    }
+    const auto& accumulator = registers.getA();
+    pushIntoStack(accumulator);
+    return 0;
+}
+
+template <AddressingMode Mode>
+inline unsigned Cpu::php()
+{
+    if constexpr(Mode != AddressingMode::Implied) {
+        static_assert("PHP instruction does not support addressing mode other than Implied");
+    }
+    const auto& flags = registers.getP();
+    pushIntoStack(flags);
+    return 0;
+}
+
+template <AddressingMode Mode>
+inline unsigned Cpu::pla()
+{
+    if constexpr(Mode != AddressingMode::Implied) {
+        static_assert("PLA instruction does not support addressing mode other than Implied");
+    }
+    auto& accumulator = registers.getA();
+    accumulator = popFromStack();
+    return 0;
+}
+
+template <AddressingMode Mode>
+inline unsigned Cpu::plp()
+{
+    if constexpr(Mode != AddressingMode::Implied) {
+        static_assert("PLP instruction does not support addressing mode other than Implied");
+    }
+    auto& flags = registers.getP();
+    flags = popFromStack();
+    return 0;
+}
