@@ -42,6 +42,14 @@ class Cpu
         template <AddressingMode Mode> unsigned txa();          // TXA - Transfer X to A
         template <AddressingMode Mode> unsigned txs();          // TXS - Transfer X to S
         template <AddressingMode Mode> unsigned tya();          // TYA - Transfer T to A
+
+        // Increment/Decrement instructions
+        template <AddressingMode Mode> unsigned dec();          // DEC - Decrement (mem)
+        template <AddressingMode Mode> unsigned dex();          // DEX - Decrement X
+        template <AddressingMode Mode> unsigned dey();          // DEY - Decrement Y
+        template <AddressingMode Mode> unsigned inc();          // INC - Increment (mem)
+        template <AddressingMode Mode> unsigned inx();          // INX - Increment X
+        template <AddressingMode Mode> unsigned iny();          // INY - Increment Y
 };
 
 #include "Cpu.inl"

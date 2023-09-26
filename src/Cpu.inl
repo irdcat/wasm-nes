@@ -1,3 +1,4 @@
+#include "Cpu.hpp"
 template <AddressingMode Mode>
 inline u8 Cpu::resolveOperand8()
 {
@@ -193,5 +194,68 @@ inline unsigned Cpu::tya()
     const auto& y = registers.getY();
     auto& accumulator = registers.getA();
     accumulator = y;
+    return 0;
+}
+template <AddressingMode Mode>
+inline unsigned Cpu::dec()
+{
+    u16 address = resolveOperand16<Mode>();
+    u8 operand = mmu->readFromMemory(address);
+    operand--;
+    mmu->writeIntoMemory(address, operand);
+    return 0;
+}
+
+template <AddressingMode Mode>
+inline unsigned Cpu::dex()
+{
+    if constexpr(Mode != AddressingMode::Implied) {
+        static_assert("DEX instruction does not support addressing mode other than Implied");
+    }
+    auto& x = registers.getX();
+    x--;
+    return 0;
+}
+
+template <AddressingMode Mode>
+inline unsigned Cpu::dey()
+{
+    if constexpr(Mode != AddressingMode::Implied) {
+        static_assert("DEY instruction does not support addressing mode other than Implied");
+    }
+    auto& y = registers.getY();
+    y--;
+    return 0;
+}
+
+template <AddressingMode Mode>
+inline unsigned Cpu::inc()
+{
+    u16 address = resolveOperand16<Mode>();
+    u8 operand = mmu->readFromMemory(address);
+    operand++;
+    mmu->writeIntoMemory(address, operand);
+    return 0;
+}
+
+template <AddressingMode Mode>
+inline unsigned Cpu::inx()
+{
+    if constexpr(Mode != AddressingMode::Implied) {
+        static_assert("INX instruction does not support addressing mode other than Implied");
+    }
+    auto& x = registers.getX();
+    x++;
+    return 0;
+}
+
+template <AddressingMode Mode>
+inline unsigned Cpu::iny()
+{
+    if constexpr(Mode != AddressingMode::Implied) {
+        static_assert("INY instruction does not support addressing mode other than Implied");
+    }
+    auto& y = registers.getY();
+    y++;
     return 0;
 }
