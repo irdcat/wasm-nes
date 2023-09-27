@@ -337,7 +337,7 @@ inline unsigned Cpu::pha()
         static_assert("PHA instruction does not support addressing mode other than Implied");
     }
     const auto& accumulator = registers.getA();
-    pushIntoStack(accumulator);
+    pushIntoStack8(accumulator);
     return 0;
 }
 
@@ -348,7 +348,7 @@ inline unsigned Cpu::php()
         static_assert("PHP instruction does not support addressing mode other than Implied");
     }
     const auto& flags = registers.getP();
-    pushIntoStack(flags);
+    pushIntoStack8(flags);
     return 0;
 }
 
@@ -359,7 +359,7 @@ inline unsigned Cpu::pla()
         static_assert("PLA instruction does not support addressing mode other than Implied");
     }
     auto& accumulator = registers.getA();
-    accumulator = popFromStack();
+    accumulator = popFromStack8();
     return 0;
 }
 
@@ -370,6 +370,42 @@ inline unsigned Cpu::plp()
         static_assert("PLP instruction does not support addressing mode other than Implied");
     }
     auto& flags = registers.getP();
-    flags = popFromStack();
+    flags = popFromStack8();
+    return 0;
+}
+
+template <AddressingMode Mode>
+inline unsigned Cpu::jmp()
+{
+    if constexpr(Mode != AddressingMode::Absolute && Mode != AddressingMode::Indirect) {
+        static_assert("JMP instructions does not support addressing modes other than Absolute or Indirect");
+    }
+    auto address = resolveOperand16<Mode>();
+    auto& pc = registers.getPc();
+    pc = address;
+    return 0;
+}
+
+template <AddressingMode Mode>
+inline unsigned Cpu::jsr()
+{
+    if constexpr(Mode != AddressingMode::Absolute) {
+        static_assert("JSR instruction does not support addressing mode other than Absolute");
+    }
+    auto& pc = registers.getPc();
+    auto address = resolveOperand16<Mode>();
+    pushIntoStack16(pc);
+    pc = address;
+    return 0;
+}
+
+template <AddressingMode Mode>
+inline unsigned Cpu::rts()
+{
+    if constexpr(Mode != AddressingMode::Implied) {
+        static_assert("RTS instruction does not support addressing mode other than Implied");
+    }
+    auto& pc = registers.getPc();
+    pc = popFromStack16();
     return 0;
 }

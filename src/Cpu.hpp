@@ -26,8 +26,11 @@ class Cpu
         u8 fetchImmedate8();
         u16 fetchImmedate16();
 
-        u8 popFromStack();
-        void pushIntoStack(u8 value);
+        u8 popFromStack8();
+        void pushIntoStack8(u8 value);
+
+        u16 popFromStack16();
+        void pushIntoStack16(u16 value);
 
         template <AddressingMode Mode> u8 resolveOperand8();
         template <AddressingMode Mode> u16 resolveOperand16();
@@ -68,6 +71,11 @@ class Cpu
         template <AddressingMode Mode> unsigned php();          // PHP - Push Processor status
         template <AddressingMode Mode> unsigned pla();          // PLA - Pull Accumulator
         template <AddressingMode Mode> unsigned plp();          // PLP - Pull Processor status
+
+        // Jump & Subroutines instructions
+        template <AddressingMode Mode> unsigned jmp();          // JMP - Jump
+        template <AddressingMode Mode> unsigned jsr();          // JSR - Jump to subroutine
+        template <AddressingMode Mode> unsigned rts();          // RTS - Return from subroutine
 };
 
 #include "Cpu.inl"

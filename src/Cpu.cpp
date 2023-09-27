@@ -45,7 +45,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x1D: break; // ORA absolute indexed X
         case 0x1E: break; // ASL absolute indexed X
         case 0x1F: break; // SLO absolute indexed X [Unofficial]
-        case 0x20: break; // JSR absolute
+        case 0x20: jsr<AddressingMode::Absolute>(); break; // JSR absolute
         case 0x21: break; // AND indirect X
         case 0x22: break; // STP [Unofficial]
         case 0x23: break; // RLA indirect X [Unofficial]
@@ -89,7 +89,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x49: break; // EOR immediate
         case 0x4A: break; // LSR accumulator
         case 0x4B: break; // ALR immediate [Unofficial]
-        case 0x4C: break; // JMP absolute
+        case 0x4C: jmp<AddressingMode::Absolute>(); break; // JMP absolute
         case 0x4D: break; // EOR absolute
         case 0x4E: break; // LSR absolute
         case 0x4F: break; // SRE absolute [Unofficial]
@@ -109,7 +109,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x5D: break; // EOR absolute indexed X
         case 0x5E: break; // LSR absolute indexed X
         case 0x5F: break; // SRE absolute indexed X [Unofficial]
-        case 0x60: break; // RTS implied
+        case 0x60: rts<AddressingMode::Implied>(); break; // RTS implied
         case 0x61: break; // ADC indirect X
         case 0x62: break; // STP [Unofficial]
         case 0x63: break; // RRA indirect X [Unofficial]
@@ -121,7 +121,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x69: break; // ADC immediate
         case 0x6A: break; // ROR accumulator
         case 0x6B: break; // ARR immediate [Unofficial]
-        case 0x6C: break; // JMP indirect
+        case 0x6C: jmp<AddressingMode::Indirect>(); break; // JMP indirect
         case 0x6D: break; // ADC absolute
         case 0x6E: break; // ROR absolute
         case 0x6F: break; // RRA absolute [Unofficial]
@@ -291,14 +291,27 @@ u16 Cpu::fetchImmedate16()
         + static_cast<u16>(fetchImmedate8() << 8);
 }
 
-u8 Cpu::popFromStack()
+u8 Cpu::popFromStack8()
 {
     auto& s = registers.getS();
     return mmu->readFromMemory(0x100 | ++s);
 }
 
-void Cpu::pushIntoStack(u8 value)
+void Cpu::pushIntoStack8(u8 value)
 {
     auto& s = registers.getS();
     mmu->writeIntoMemory(0x100 | s--, value);
+}
+
+u16 Cpu::popFromStack16()
+{
+    u8 high = popFromStack8();
+    u8 low = popFromStack8();
+    return high << 8 | low;
+}
+
+void Cpu::pushIntoStack16(u16 value)
+{
+    pushIntoStack8(value & 0xFF);
+    pushIntoStack8(value >> 8);
 }
