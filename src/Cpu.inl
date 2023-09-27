@@ -429,3 +429,30 @@ inline unsigned Cpu::sbc()
     accumulator = accumulator - operand - flags.carry;
     return 0;
 }
+
+template <AddressingMode Mode>
+inline unsigned Cpu::_and()
+{
+    auto& accumulator = registers.getA();
+    u8 operand = resolveOperand8<Mode>();
+    accumulator &= operand;
+    return 0;
+}
+
+template <AddressingMode Mode>
+inline unsigned Cpu::eor()
+{
+    auto& accumulator = registers.getA();
+    u8 operand = resolveOperand8<Mode>();
+    accumulator ^= operand;
+    return 0;
+}
+
+template <AddressingMode Mode>
+inline unsigned Cpu::ora()
+{
+    auto& accumulator = registers.getA();
+    u8 operand = resolveOperand8<Mode>();
+    accumulator |= operand;
+    return 0;
+}

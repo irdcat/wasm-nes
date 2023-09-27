@@ -80,6 +80,11 @@ class Cpu
         // Arithmetic instructions
         template <AddressingMode Mode> unsigned adc();          // ADC - Add with Carry
         template <AddressingMode Mode> unsigned sbc();          // SBC - Subtract with Carry
+
+        // Logical instructions
+        template <AddressingMode Mode> unsigned _and();          // AND - Logical AND
+        template <AddressingMode Mode> unsigned eor();          // EOR - Logical Exclusive OR (XOR)
+        template <AddressingMode Mode> unsigned ora();          // ORA - Logical OR
 };
 
 #include "Cpu.inl"
