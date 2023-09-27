@@ -110,35 +110,35 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x5E: break; // LSR absolute indexed X
         case 0x5F: break; // SRE absolute indexed X [Unofficial]
         case 0x60: rts<AddressingMode::Implied>(); break; // RTS implied
-        case 0x61: break; // ADC indirect X
+        case 0x61: adc<AddressingMode::IndirectX>(); break; // ADC indirect X
         case 0x62: break; // STP [Unofficial]
         case 0x63: break; // RRA indirect X [Unofficial]
         case 0x64: break; // NOP zero-page [Unofficial]
-        case 0x65: break; // ADC zero-page
+        case 0x65: adc<AddressingMode::ZeroPage>(); break; // ADC zero-page
         case 0x66: break; // ROR zero-page
         case 0x67: break; // RRA zero-page [Unofficial]
         case 0x68: pla<AddressingMode::Implied>(); break; // PLA implied
-        case 0x69: break; // ADC immediate
+        case 0x69: adc<AddressingMode::Immediate>(); break; // ADC immediate
         case 0x6A: break; // ROR accumulator
         case 0x6B: break; // ARR immediate [Unofficial]
         case 0x6C: jmp<AddressingMode::Indirect>(); break; // JMP indirect
-        case 0x6D: break; // ADC absolute
+        case 0x6D: adc<AddressingMode::Absolute>(); break; // ADC absolute
         case 0x6E: break; // ROR absolute
         case 0x6F: break; // RRA absolute [Unofficial]
         case 0x70: break; // BVS relative
-        case 0x71: break; // ADC indirect Y
+        case 0x71: adc<AddressingMode::IndirectY>(); break; // ADC indirect Y
         case 0x72: break; // STP [Unofficial]
         case 0x73: break; // RRA indirect Y [Unofficial]
         case 0x74: break; // NOP zero-page indexed X [Unofficial]
-        case 0x75: break; // ADC zero-page indexed X
+        case 0x75: adc<AddressingMode::ZeroPageIndexedX>(); break; // ADC zero-page indexed X
         case 0x76: break; // ROR zero-page indexed X
         case 0x77: break; // RRA zero-page indexed X [Unofficial]
         case 0x78: sei<AddressingMode::Implied>(); break; // SEI implied
-        case 0x79: break; // ADC absolute indexed Y
+        case 0x79: adc<AddressingMode::AbsoluteIndexedY>(); break; // ADC absolute indexed Y
         case 0x7A: break; // NOP implied [Unofficial]
         case 0x7B: break; // RRA absolute indexed Y [Unofficial]
         case 0x7C: break; // NOP absolute indexed X [Unofficial]
-        case 0x7D: break; // ADC absolute indexed X
+        case 0x7D: adc<AddressingMode::AbsoluteIndexedX>(); break; // ADC absolute indexed X
         case 0x7E: break; // ROR absolute indexed X
         case 0x7F: break; // RRA absolute indexed X [Unofficial]
         case 0x80: break; // NOP immediate [Unofficial]
@@ -238,35 +238,35 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0xDE: dec<AddressingMode::AbsoluteIndexedX>(); break; // DEC absolute indexed X
         case 0xDF: break; // DCP absolute indexed X [Unofficial]
         case 0xE0: break; // CPX immediate
-        case 0xE1: break; // SBC indirect X
+        case 0xE1: sbc<AddressingMode::IndirectX>(); break; // SBC indirect X
         case 0xE2: break; // NOP immediate [Unofficial]
         case 0xE3: break; // ISC indirect X [Unofficial]
         case 0xE4: break; // CPX zero-page
-        case 0xE5: break; // SBC zero-page
+        case 0xE5: sbc<AddressingMode::ZeroPage>(); break; // SBC zero-page
         case 0xE6: inc<AddressingMode::ZeroPage>(); break; // INC zero-page
         case 0xE7: break; // ISC zero-page [Unofficial]
         case 0xE8: inx<AddressingMode::Implied>(); break; // INX implied
-        case 0xE9: break; // SBC immediate
+        case 0xE9: sbc<AddressingMode::Immediate>(); break; // SBC immediate
         case 0xEA: break; // NOP
         case 0xEB: break; // USBC immediate [Unofficial]
         case 0xEC: break; // CPX absolute
-        case 0xED: break; // SBC absolute
+        case 0xED: sbc<AddressingMode::Absolute>(); break; // SBC absolute
         case 0xEE: inc<AddressingMode::Absolute>(); break; // INC absolute
         case 0xEF: break; // ISC absolute [Unofficial]
         case 0xF0: break; // BEQ relative
-        case 0xF1: break; // SBC indirect Y
+        case 0xF1: sbc<AddressingMode::IndirectY>(); break; // SBC indirect Y
         case 0xF2: break; // STP [Unofficial]
         case 0xF3: break; // ISC indirect Y [Unofficial]
         case 0xF4: break; // NOP zero-page indexed X [Unofficial]
-        case 0xF5: break; // SBC zero-page indexed X
+        case 0xF5: sbc<AddressingMode::ZeroPageIndexedX>(); break; // SBC zero-page indexed X
         case 0xF6: inc<AddressingMode::ZeroPageIndexedX>(); break; // INC zero-page indexed X
         case 0xF7: break; // ISC zero-page indexed X [Unofficial]
         case 0xF8: sed<AddressingMode::Implied>(); break; // SED implied
-        case 0xF9: break; // SBC absolute indexed Y
+        case 0xF9: sbc<AddressingMode::AbsoluteIndexedY>(); break; // SBC absolute indexed Y
         case 0xFA: break; // NOP implied [Unofficial]
         case 0xFB: break; // ISC absolute indexed Y [Unofficial]
         case 0xFC: break; // NOP absolute indexed X [Unofficial]
-        case 0xFD: break; // SBC absolute indexed X
+        case 0xFD: sbc<AddressingMode::AbsoluteIndexedX>(); break; // SBC absolute indexed X
         case 0xFE: inc<AddressingMode::AbsoluteIndexedX>(); break; // INC absolute indexed X
         case 0xFF: break; // ISC absolute indexed X [Unofficial]
     }
