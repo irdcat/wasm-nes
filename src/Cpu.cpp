@@ -14,99 +14,99 @@ unsigned Cpu::executeInstruction(u8 opcode)
 {
     switch(opcode) {
         case 0x00: break; // BRK implied
-        case 0x01: break; // ORA indirect X
+        case 0x01: ora<AddressingMode::IndirectX>(); break; // ORA indirect X
         case 0x02: break; // STP [Unofficial]
         case 0x03: break; // SLO indirect X [Unofficial]
         case 0x04: break; // NOP zero-page [Unofficial]
-        case 0x05: break; // ORA zero-page
+        case 0x05: ora<AddressingMode::ZeroPage>(); break; // ORA zero-page
         case 0x06: break; // ASL zero-page
         case 0x07: break; // SLO zero-page [Unofficial]
         case 0x08: php<AddressingMode::Implied>(); break; // PHP implied
-        case 0x09: break; // ORA accumulator
+        case 0x09: ora<AddressingMode::Immediate>(); break; // ORA immediate
         case 0x0A: break; // ASL accumulator
         case 0x0B: break; // ANC immediate [Unofficial]
         case 0x0C: break; // NOP absolute [Unofficial]
-        case 0x0D: break; // ORA absolute
+        case 0x0D: ora<AddressingMode::Absolute>(); break; // ORA absolute
         case 0x0E: break; // ASL absolute
         case 0x0F: break; // SLO absolute [Unofficial]
         case 0x10: break; // BPL relative
-        case 0x11: break; // ORA indirect Y
+        case 0x11: ora<AddressingMode::IndirectY>(); break; // ORA indirect Y
         case 0x12: break; // STP [Unofficial]
         case 0x13: break; // SLO indirect Y [Unofficial]
         case 0x14: break; // NOP zero-page indexed X [Unofficial]
-        case 0x15: break; // ORA zero-page indexed X
+        case 0x15: ora<AddressingMode::ZeroPageIndexedX>(); break; // ORA zero-page indexed X
         case 0x16: break; // ASL zero-page indexed X
         case 0x17: break; // SLO zero-page indexed X [Unofficial]
         case 0x18: clc<AddressingMode::Implied>(); break; // CLC implied
-        case 0x19: break; // ORA absolute indexed X
+        case 0x19: ora<AddressingMode::AbsoluteIndexedY>(); break; // ORA absolute indexed Y
         case 0x1A: break; // NOP implied [Unofficial]
         case 0x1B: break; // SLO absolute indexed Y [Unofficial]
         case 0x1C: break; // NOP absolute indexed X [Unofficial]
-        case 0x1D: break; // ORA absolute indexed X
+        case 0x1D: ora<AddressingMode::AbsoluteIndexedX>(); break; // ORA absolute indexed X
         case 0x1E: break; // ASL absolute indexed X
         case 0x1F: break; // SLO absolute indexed X [Unofficial]
         case 0x20: jsr<AddressingMode::Absolute>(); break; // JSR absolute
-        case 0x21: break; // AND indirect X
+        case 0x21: _and<AddressingMode::IndirectX>(); break; // AND indirect X
         case 0x22: break; // STP [Unofficial]
         case 0x23: break; // RLA indirect X [Unofficial]
         case 0x24: break; // BIT zero-page
-        case 0x25: break; // AND zero-page
+        case 0x25: _and<AddressingMode::ZeroPage>(); break; // AND zero-page
         case 0x26: break; // ROL zero-page
         case 0x27: break; // RLA zero-page [Unofficial]
         case 0x28: plp<AddressingMode::Implied>(); break; // PLP implied
-        case 0x29: break; // AND immediate
+        case 0x29: _and<AddressingMode::Immediate>(); break; // AND immediate
         case 0x2A: break; // ROL accumulator
         case 0x2B: break; // ANC immediate [Unofficial]
         case 0x2C: break; // BIT absolute
-        case 0x2D: break; // AND absolute
+        case 0x2D: _and<AddressingMode::Absolute>(); break; // AND absolute
         case 0x2E: break; // ROL absolute
         case 0x2F: break; // RLA absolute [Unofficial]
         case 0x30: break; // BMI relative
-        case 0x31: break; // AND indirect Y
+        case 0x31: _and<AddressingMode::IndirectY>(); break; // AND indirect Y
         case 0x32: break; // STP [Unofficial]
         case 0x33: break; // RLA indirect Y [Unofficial]
         case 0x34: break; // NOP zero-page indexed X [Unofficial]
-        case 0x35: break; // AND zero-page indexed X
+        case 0x35: _and<AddressingMode::ZeroPageIndexedX>(); break; // AND zero-page indexed X
         case 0x36: break; // ROL zero-page indexed X
         case 0x37: break; // RLA zero-page indexed X [Unofficial]
         case 0x38: sec<AddressingMode::Implied>(); break; // SEC implied
-        case 0x39: break; // AND absolute indexed Y
+        case 0x39: _and<AddressingMode::AbsoluteIndexedY>(); break; // AND absolute indexed Y
         case 0x3A: break; // NOP implied [Unofficial]
         case 0x3B: break; // RLA absolute indexed Y [Unofficial]
         case 0x3C: break; // NOP absolute indexed X [Unofficial]
-        case 0x3D: break; // AND absolute indexed X
+        case 0x3D: _and<AddressingMode::AbsoluteIndexedX>(); break; // AND absolute indexed X
         case 0x3E: break; // ROL absolute indexed X
         case 0x3F: break; // RLA absolute indexed X [Unofficial]
         case 0x40: break; // RTI implied
-        case 0x41: break; // EOR indirect X
+        case 0x41: eor<AddressingMode::IndirectX>(); break; // EOR indirect X
         case 0x42: break; // STP [Unofficial]
         case 0x43: break; // SRE indirect X [Unofficial]
         case 0x44: break; // NOP zero-page [Unofficial]
-        case 0x45: break; // EOR zero-page
+        case 0x45: eor<AddressingMode::ZeroPage>(); break; // EOR zero-page
         case 0x46: break; // LSR zero-page
         case 0x47: break; // SRE zero-page [Unofficial]
         case 0x48: pha<AddressingMode::Implied>(); break; // PHA implied
-        case 0x49: break; // EOR immediate
+        case 0x49: eor<AddressingMode::Immediate>(); break; // EOR immediate
         case 0x4A: break; // LSR accumulator
         case 0x4B: break; // ALR immediate [Unofficial]
         case 0x4C: jmp<AddressingMode::Absolute>(); break; // JMP absolute
-        case 0x4D: break; // EOR absolute
+        case 0x4D: eor<AddressingMode::Absolute>(); break; // EOR absolute
         case 0x4E: break; // LSR absolute
         case 0x4F: break; // SRE absolute [Unofficial]
         case 0x50: break; // BVC relative
-        case 0x51: break; // EOR indirect Y
+        case 0x51: eor<AddressingMode::IndirectY>(); break; // EOR indirect Y
         case 0x52: break; // STP [Unofficial]
         case 0x53: break; // SRE indirect Y [Unofficial]
         case 0x54: break; // NOP zero-page indexed X [Unofficial]
-        case 0x55: break; // EOR zero-page indexed X
+        case 0x55: eor<AddressingMode::ZeroPageIndexedX>(); break; // EOR zero-page indexed X
         case 0x56: break; // LSR zero-page indexed X
         case 0x57: break; // SRE zero-page indexed X [Unofficial]
         case 0x58: cli<AddressingMode::Implied>(); break; // CLI implied
-        case 0x59: break; // EOR absolute indexed Y
+        case 0x59: eor<AddressingMode::AbsoluteIndexedY>(); break; // EOR absolute indexed Y
         case 0x5A: break; // NOP implied [Unofficial]
         case 0x5B: break; // SRE absolute indexed Y [Unofficial]
         case 0x5C: break; // NOP absolute indexed X [Unofficial]
-        case 0x5D: break; // EOR absolute indexed X
+        case 0x5D: eor<AddressingMode::AbsoluteIndexedX>(); break; // EOR absolute indexed X
         case 0x5E: break; // LSR absolute indexed X
         case 0x5F: break; // SRE absolute indexed X [Unofficial]
         case 0x60: rts<AddressingMode::Implied>(); break; // RTS implied
