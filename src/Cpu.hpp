@@ -76,6 +76,10 @@ class Cpu
         template <AddressingMode Mode> unsigned jmp();          // JMP - Jump
         template <AddressingMode Mode> unsigned jsr();          // JSR - Jump to subroutine
         template <AddressingMode Mode> unsigned rts();          // RTS - Return from subroutine
+
+        // Arithmetic instructions
+        template <AddressingMode Mode> unsigned adc();          // ADC - Add with Carry
+        template <AddressingMode Mode> unsigned sbc();          // SBC - Subtract with Carry
 };
 
 #include "Cpu.inl"

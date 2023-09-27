@@ -409,3 +409,23 @@ inline unsigned Cpu::rts()
     pc = popFromStack16();
     return 0;
 }
+
+template <AddressingMode Mode>
+inline unsigned Cpu::adc()
+{
+    auto& accumulator = registers.getA();
+    u8 operand = resolveOperand8<Mode>();
+    const auto& flags = registers.getP();
+    accumulator += operand + flags.carry;
+    return 0;
+}
+
+template <AddressingMode Mode>
+inline unsigned Cpu::sbc()
+{
+    auto& accumulator = registers.getA();
+    u8 operand = resolveOperand8<Mode>();
+    const auto& flags = registers.getP();
+    accumulator = accumulator - operand - flags.carry;
+    return 0;
+}
