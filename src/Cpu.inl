@@ -78,7 +78,10 @@ template <AddressingMode Mode>
 inline unsigned Cpu::lda()
 {
     auto& accumulator = registers.getA();
+    auto& flags = registers.getP();
     accumulator = resolveOperand8<Mode>();
+    flags.zero = accumulator == 0;
+    flags.negative = (accumulator >> 7) & 0x1;
     return 0;
 }
 
@@ -86,7 +89,10 @@ template <AddressingMode Mode>
 inline unsigned Cpu::ldx()
 {
     auto& x = registers.getX();
+    auto& flags = registers.getP();
     x = resolveOperand8();
+    flags.zero = x == 0;
+    flags.negative = (x >> 7) & 0x1;
     return 0;
 }
 
@@ -94,7 +100,10 @@ template <AddressingMode Mode>
 inline unsigned Cpu::ldy()
 {
     auto& y = registers.getY();
+    auto& flags = registers.getP();
     y = resolveOperand8();
+    flags.zero = y == 0;
+    flags.negative = (y >> 7) & 0x1;
     return 0;
 }
 
@@ -132,8 +141,11 @@ inline unsigned Cpu::tax()
         static_assert("TAX instruction does not support addressing mode other than Implied");
     }
     const auto& accumulator = registers.getA();
+    auto& flags = registers.getP();
     auto& x = registers.getX();
     x = accumulator;
+    flags.zero = x == 0;
+    flags.negative = (x >> 7) & 0x1;
     return 0;
 }
 
@@ -144,8 +156,11 @@ inline unsigned Cpu::tay()
         static_assert("TAY instruction does not support addressing mode other than Implied");
     }
     const auto& accumulator = registers.getA();
+    auto& flags = registers.getP();
     auto& y = registers.getY();
     y = accumulator;
+    flags.zero = y == 0;
+    flags.negative = (y >> 7) & 0x1;
     return 0;
 }
 
@@ -168,8 +183,11 @@ inline unsigned Cpu::txa()
         static_assert("TXA instruction does not support addressing mode other than Implied");
     }
     const auto& x = registers.getX();
+    auto& flags = registers.getP();
     auto& accumulator = registers.getA();
     accumulator = x;
+    flags.zero = accumulator == 0;
+    flags.negative = (accumulator >> 7) & 0x1;
     return 0;
 }
 
@@ -192,8 +210,11 @@ inline unsigned Cpu::tya()
         static_assert("TYA instruction does not support addressing mode other than Implied");
     }
     const auto& y = registers.getY();
+    auto& flags = registers.getP();
     auto& accumulator = registers.getA();
     accumulator = y;
+    flags.zero = y == 0;
+    flags.negative = (y >> 7) & 0x1;
     return 0;
 }
 template <AddressingMode Mode>
@@ -203,6 +224,8 @@ inline unsigned Cpu::dec()
     u8 operand = mmu->readFromMemory(address);
     operand--;
     mmu->writeIntoMemory(address, operand);
+    flags.zero = operand == 0;
+    flags.negative = (operand >> 7) & 0x1;
     return 0;
 }
 
@@ -213,7 +236,10 @@ inline unsigned Cpu::dex()
         static_assert("DEX instruction does not support addressing mode other than Implied");
     }
     auto& x = registers.getX();
+    auto& flags = registers.getP();
     x--;
+    flags.zero = x == 0;
+    flags.negative = (x >> 7) & 0x1;
     return 0;
 }
 
@@ -224,17 +250,23 @@ inline unsigned Cpu::dey()
         static_assert("DEY instruction does not support addressing mode other than Implied");
     }
     auto& y = registers.getY();
+    auto& flags = registers.getP();
     y--;
+    flags.zero = y == 0;
+    flags.negative = (y >> 7) & 0x1;
     return 0;
 }
 
 template <AddressingMode Mode>
 inline unsigned Cpu::inc()
 {
+    auto& flags = registers.getP();
     u16 address = resolveOperand16<Mode>();
     u8 operand = mmu->readFromMemory(address);
     operand++;
     mmu->writeIntoMemory(address, operand);
+    flags.zero = operand == 0;
+    flags.negative = (operand >> 7) & 0x1;
     return 0;
 }
 
@@ -245,7 +277,10 @@ inline unsigned Cpu::inx()
         static_assert("INX instruction does not support addressing mode other than Implied");
     }
     auto& x = registers.getX();
+    auto& flags = registers.getP();
     x++;
+    flags.zero = x == 0;
+    flags.negative = (x >> 7) & 0x1;
     return 0;
 }
 
@@ -256,7 +291,10 @@ inline unsigned Cpu::iny()
         static_assert("INY instruction does not support addressing mode other than Implied");
     }
     auto& y = registers.getY();
+    auto& flags = registers.getP();
     y++;
+    flags.zero = y == 0;
+    flags.negative = (y >> 7) & 0x1;
     return 0;
 }
 
@@ -347,7 +385,8 @@ inline unsigned Cpu::php()
     if constexpr(Mode != AddressingMode::Implied) {
         static_assert("PHP instruction does not support addressing mode other than Implied");
     }
-    const auto& flags = registers.getP();
+    auto& flags = registers.getP();
+    flags.raw |= 0x3 << 4;
     pushIntoStack8(flags);
     return 0;
 }
@@ -371,6 +410,7 @@ inline unsigned Cpu::plp()
     }
     auto& flags = registers.getP();
     flags = popFromStack8();
+    flags &= ~(0x3 << 4);
     return 0;
 }
 
@@ -415,8 +455,13 @@ inline unsigned Cpu::adc()
 {
     auto& accumulator = registers.getA();
     u8 operand = resolveOperand8<Mode>();
-    const auto& flags = registers.getP();
-    accumulator += operand + flags.carry;
+    auto& flags = registers.getP();
+    u16 result = accumulator + operand + flags.carry;
+    flags.carry = result >> 8;
+    flags.overflow = accumulator <= 0x7F && result > 0x7F; 
+    accumulator = result & 0xFF;
+    flags.zero = accumulator == 0;
+    flags.negative = (accumulator >> 7) & 0x1;
     return 0;
 }
 
@@ -425,8 +470,13 @@ inline unsigned Cpu::sbc()
 {
     auto& accumulator = registers.getA();
     u8 operand = resolveOperand8<Mode>();
-    const auto& flags = registers.getP();
-    accumulator = accumulator - operand - flags.carry;
+    auto& flags = registers.getP();
+    u16 result = accumulator - operand - flags.carry;
+    flags.carry = result >> 8;
+    flags.overflow = accumulator <= 0x7F && result > 0x7F;
+    accumulator = result & 0xFF;
+    flags.zero = accumulator == 0;
+    flags.negative = (accumulator >> 7) & 0x1;
     return 0;
 }
 
@@ -436,6 +486,8 @@ inline unsigned Cpu::_and()
     auto& accumulator = registers.getA();
     u8 operand = resolveOperand8<Mode>();
     accumulator &= operand;
+    flags.zero = accumulator == 0;
+    flags.negative = (accumulator >> 7) & 0x1;
     return 0;
 }
 
@@ -445,6 +497,8 @@ inline unsigned Cpu::eor()
     auto& accumulator = registers.getA();
     u8 operand = resolveOperand8<Mode>();
     accumulator ^= operand;
+    flags.zero = accumulator == 0;
+    flags.negative = (accumulator >> 7) & 0x1;
     return 0;
 }
 
@@ -454,5 +508,7 @@ inline unsigned Cpu::ora()
     auto& accumulator = registers.getA();
     u8 operand = resolveOperand8<Mode>();
     accumulator |= operand;
+    flags.zero = accumulator == 0;
+    flags.negative = (accumulator >> 7) & 0x1;
     return 0;
 }

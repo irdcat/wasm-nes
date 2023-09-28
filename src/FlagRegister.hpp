@@ -11,7 +11,7 @@ union FlagRegister
         u8 zero : 1;
         u8 interruptDisable : 1;
         u8 decimal : 1;
-        u8 bFlag : 1;
+        u8 breakFlag : 1;
         u8 : 1;
         u8 overflow : 1;
         u8 negative : 1;
