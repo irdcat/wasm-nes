@@ -1,4 +1,6 @@
-#include "Cpu.hpp"
+#define STATIC_ASSERT_MESSAGE(addressingMode, bits) \
+    "Addressing Mode: '" #addressingMode "' is unsupported for resolving " #bits "-bit operand"
+
 template <AddressingMode Mode>
 inline u8 Cpu::resolveOperand8()
 {
@@ -36,7 +38,7 @@ inline u8 Cpu::resolveOperand8()
             + registers.getY();
         operand = mmu->readFromMemory(address);
     } else {
-        static_assert("Addressing mode '" + stringifyAddressingMode(Mode) +"' is unsupported for resolving 8-bit operand");
+        static_assert(STATIC_ASSERT_MESSAGE(stringifyAddressingMode(Mode).data(), 8));
     }
 
     return operand;
@@ -68,7 +70,7 @@ inline u16 Cpu::resolveOperand16()
             + static_cast<u16>(mmu->readFromMemory(indirectAddress + 1))
             + registers.getY();
     } else {
-        static_assert("Addressing mode '" + stringifyAddressingMode(Mode) +"' is unsupported for resolving 16-bit operand");
+        static_assert(STATIC_ASSERT_MESSAGE(stringifyAddressingMode(Mode).data(), 16));
     }
 
     return operand;
@@ -90,7 +92,7 @@ inline unsigned Cpu::ldx()
 {
     auto& x = registers.getX();
     auto& flags = registers.getP();
-    x = resolveOperand8();
+    x = resolveOperand8<Mode>();
     flags.zero = x == 0;
     flags.negative = (x >> 7) & 0x1;
     return 0;
@@ -101,7 +103,7 @@ inline unsigned Cpu::ldy()
 {
     auto& y = registers.getY();
     auto& flags = registers.getP();
-    y = resolveOperand8();
+    y = resolveOperand8<Mode>();
     flags.zero = y == 0;
     flags.negative = (y >> 7) & 0x1;
     return 0;
@@ -222,6 +224,7 @@ inline unsigned Cpu::dec()
 {
     u16 address = resolveOperand16<Mode>();
     u8 operand = mmu->readFromMemory(address);
+    auto& flags = registers.getP();
     operand--;
     mmu->writeIntoMemory(address, operand);
     flags.zero = operand == 0;
@@ -485,6 +488,7 @@ inline unsigned Cpu::_and()
 {
     auto& accumulator = registers.getA();
     u8 operand = resolveOperand8<Mode>();
+    auto& flags = registers.getP();
     accumulator &= operand;
     flags.zero = accumulator == 0;
     flags.negative = (accumulator >> 7) & 0x1;
@@ -496,6 +500,7 @@ inline unsigned Cpu::eor()
 {
     auto& accumulator = registers.getA();
     u8 operand = resolveOperand8<Mode>();
+    auto& flags = registers.getP();
     accumulator ^= operand;
     flags.zero = accumulator == 0;
     flags.negative = (accumulator >> 7) & 0x1;
@@ -507,6 +512,7 @@ inline unsigned Cpu::ora()
 {
     auto& accumulator = registers.getA();
     u8 operand = resolveOperand8<Mode>();
+    auto& flags = registers.getP();
     accumulator |= operand;
     flags.zero = accumulator == 0;
     flags.negative = (accumulator >> 7) & 0x1;
