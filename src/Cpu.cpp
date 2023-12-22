@@ -3,6 +3,17 @@
 Cpu::Cpu(const std::shared_ptr<Mmu> &mmu)
     : mmu(mmu)
 {
+    auto& a = registers.getA();
+    auto& x = registers.getX();
+    auto& y = registers.getY();
+    auto& p = registers.getP();
+    auto& sp = registers.getS();
+
+    a = 0;
+    x = 0;
+    y = 0;
+    p.raw = 0x24;
+    sp = 0xFD;
 }
 
 u8 Cpu::fetchOpcode()

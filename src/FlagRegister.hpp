@@ -18,4 +18,6 @@ union FlagRegister
     };
 
     operator u8&() { return raw; }
+
+    FlagRegister& operator=(u8 value) { raw = value; return *this; }
 };

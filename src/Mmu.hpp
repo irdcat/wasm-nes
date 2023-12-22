@@ -7,9 +7,9 @@ class Mmu
     public:
         Mmu() = default;
 
-        ~Mmu() = default;
+        virtual ~Mmu() = default;
 
-        u8 readFromMemory(u16 addr);
+        virtual u8 readFromMemory(u16 addr);
 
-        void writeIntoMemory(u16 addr, u8 value);
+        virtual void writeIntoMemory(u16 addr, u8 value);
 };
