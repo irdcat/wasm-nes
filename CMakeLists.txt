@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.22)
+cmake_minimum_required(VERSION 3.25)
 project(wasm-nes)
 
 if(EMSCRIPTEN)
@@ -6,8 +6,9 @@ if(EMSCRIPTEN)
         src/Cpu.cpp,
         src/Mmu.cpp)
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
-    set(CXX_STANDARD 17)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sWASM=1 -sALLOW_MEMORY_GROWTH=1 -O3")
+    set(CXX_STANDARD 20)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -sWASM=1 -sALLOW_MEMORY_GROWTH=1")
+    
     add_executable(wasm-nes ${APP_SOURCES})
 endif()
 
@@ -17,7 +18,8 @@ if(NOT EMSCRIPTEN)
         src/Mmu.cpp)
     set(TEST_SOURCES
         tests/CpuTest.cpp)
-    set(CXX_STANDARD 17)
+    set(CXX_STANDARD 20)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20")
 
     add_library(wasm-nes ${APP_LIB_SOURCES})
     add_executable(wasm-nes-tests ${TEST_SOURCES})
