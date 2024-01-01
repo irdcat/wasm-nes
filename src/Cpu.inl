@@ -1938,6 +1938,344 @@ inline unsigned Cpu::bvs<AddressingMode::Relative>()
 }
 
 /**
+ * ASL - Arithmetic Shift Left 
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::asl()
+{
+    static_assert("Unsupported addressing mode used in ASL instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::asl<AddressingMode::Accumulator>()
+{
+    auto& accumulator = registers.getA();
+    auto& flags = registers.getP();
+    flags.carry = (accumulator >> 7) & 0x1;
+    accumulator <<= 1;
+    updateNegativeFlag(accumulator);
+    updateZeroFlag(accumulator);
+    return 2;
+}
+
+template <>
+inline unsigned Cpu::asl<AddressingMode::Absolute>()
+{
+    auto& flags = registers.getP();
+    auto address = fetchImmedate16();
+    auto value = mmu->readFromMemory(address);
+    flags.carry = (value >> 7) & 0x1;
+    value <<= 1;
+    updateNegativeFlag(value);
+    updateZeroFlag(value);
+    mmu->writeIntoMemory(address, value);
+    return 6;
+}
+
+template <>
+inline unsigned Cpu::asl<AddressingMode::AbsoluteIndexedX>()
+{
+    auto& flags = registers.getP();
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+    flags.carry (value >> 7) & 0x1;
+    value <<= 1;
+    updateNegativeFlag(value);
+    updateZeroFlag(value);
+    mmu->writeIntoMemory(targetAddress, value);
+    return 7;
+}
+
+template <>
+inline unsigned Cpu::asl<AddressingMode::ZeroPage>()
+{
+    auto& flags = registers.getP();
+    auto address = fetchImmedate8();
+    auto value = mmu->readFromMemory(address);
+    flags.carry = (value >> 7) & 0x1;
+    value <<= 1;
+    updateNegativeFlag(value);
+    updateZeroFlag(value);
+    mmu->writeIntoMemory(address, value);
+    return 5;
+}
+
+template <>
+inline unsigned Cpu::asl<AddressingMode::ZeroPageIndexedX>()
+{
+    auto& flags = registers.getP();
+    auto baseAddress = fetchImmedate8();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+    flags.carry (value >> 7) & 0x1;
+    value <<= 1;
+    updateNegativeFlag(value);
+    updateZeroFlag(value);
+    mmu->writeIntoMemory(targetAddress, value);
+    return 6;
+}
+
+/**
+ * LSR - Logical Shift Left 
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::lsr()
+{
+    static_assert("Unsupported addressing mode used in LSR instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::lsr<AddressingMode::Accumulator>()
+{
+    auto& accumulator = registers.getA();
+    auto& flags = registers.getP();
+    flags.carry = accumulator & 0x1;
+    accumulator >>= 1;
+    updateNegativeFlag(accumulator);
+    updateZeroFlag(accumulator);
+    return 2;
+}
+
+template <>
+inline unsigned Cpu::lsr<AddressingMode::Absolute>()
+{
+    auto& flags = registers.getP();
+    auto address = fetchImmedate16();
+    auto value = mmu->readFromMemory(address);
+    flags.carry = accumulator & 0x1;
+    accumulator >>= 1;
+    updateNegativeFlag(value);
+    updateZeroFlag(value);
+    mmu->writeIntoMemory(address, value);
+    return 6;
+}
+
+template <>
+inline unsigned Cpu::lsr<AddressingMode::AbsoluteIndexedX>()
+{
+    auto& flags = registers.getP();
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+    flags.carry = accumulator & 0x1;
+    accumulator >>= 1;
+    updateNegativeFlag(value);
+    updateZeroFlag(value);
+    mmu->writeIntoMemory(targetAddress, value);
+    return 7;
+}
+
+template <>
+inline unsigned Cpu::lsr<AddressingMode::ZeroPage>()
+{
+    auto& flags = registers.getP();
+    auto address = fetchImmedate8();
+    auto value = mmu->readFromMemory(address);
+    flags.carry = accumulator & 0x1;
+    accumulator >>= 1;
+    updateNegativeFlag(value);
+    updateZeroFlag(value);
+    mmu->writeIntoMemory(address, value);
+    return 5;
+}
+
+template <>
+inline unsigned Cpu::lsr<AddressingMode::ZeroPageIndexedX>()
+{
+    auto& flags = registers.getP();
+    auto baseAddress = fetchImmedate8();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+    flags.carry = accumulator & 0x1;
+    accumulator >>= 1;
+    updateNegativeFlag(value);
+    updateZeroFlag(value);
+    mmu->writeIntoMemory(targetAddress, value);
+    return 6;
+}
+
+/**
+ * ROL - Rotate Left 
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::rol()
+{
+    static_assert("Unsupported addressing mode used in ROL instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::rol<AddressingMode::Accumulator>()
+{
+    auto& accumulator = registers.getA();
+    auto& flags = registers.getP();
+    auto oldCarry = flags.carry;
+    flags.carry = (accumulator >> 7) & 0x1;
+    accumulator = (accumulator << 1) | oldCarry;
+    updateNegativeFlag(accumulator);
+    updateZeroFlag(accumulator);
+    return 2;
+}
+
+template <>
+inline unsigned Cpu::rol<AddressingMode::Absolute>()
+{
+    auto& flags = registers.getP();
+    auto address = fetchImmedate16();
+    auto value = mmu->readFromMemory(address);
+    auto oldCarry = flags.carry;
+    flags.carry = (value >> 7) & 0x1;
+    value = (value << 1) | oldCarry;
+    updateNegativeFlag(value);
+    updateZeroFlag(value);
+    mmu->writeIntoMemory(address, value);
+    return 6;
+}
+
+template <>
+inline unsigned Cpu::rol<AddressingMode::AbsoluteIndexedX>()
+{
+    auto& flags = registers.getP();
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+    auto oldCarry = flags.carry;
+    flags.carry = (value >> 7) & 0x1;
+    value = (value << 1) | oldCarry;
+    updateNegativeFlag(value);
+    updateZeroFlag(value);
+    mmu->writeIntoMemory(targetAddress, value);
+    return 7;
+}
+
+template <>
+inline unsigned Cpu::rol<AddressingMode::ZeroPage>()
+{
+    auto& flags = registers.getP();
+    auto address = fetchImmedate8();
+    auto value = mmu->readFromMemory(address);
+    auto oldCarry = flags.carry;
+    flags.carry = (value >> 7) & 0x1;
+    value = (value << 1) | oldCarry;
+    updateNegativeFlag(value);
+    updateZeroFlag(value);
+    mmu->writeIntoMemory(address, value);
+    return 5;
+}
+
+template <>
+inline unsigned Cpu::rol<AddressingMode::ZeroPageIndexedX>()
+{
+    auto& flags = registers.getP();
+    auto baseAddress = fetchImmedate8();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+    auto oldCarry = flags.carry;
+    flags.carry = (value >> 7) & 0x1;
+    value = (value << 1) | oldCarry;
+    updateNegativeFlag(value);
+    updateZeroFlag(value);
+    mmu->writeIntoMemory(targetAddress, value);
+    return 7;
+}
+
+/**
+ * ROR - Rotate Right
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::ror()
+{
+    static_assert("Unsupported addressing mode used in ROR instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::ror<AddressingMode::Accumulator>()
+{
+    auto& accumulator = registers.getA();
+    auto& flags = registers.getP();
+    auto oldCarry = flags.carry;
+    flags.carry = accumulator & 0x1;
+    accumulator = (accumulator >> 1) | (oldCarry << 7);
+    updateNegativeFlag(accumulator);
+    updateZeroFlag(accumulator);
+    return 2;
+}
+
+template <>
+inline unsigned Cpu::ror<AddressingMode::Absolute>()
+{
+    auto& flags = registers.getP();
+    auto address = fetchImmedate16();
+    auto value = mmu->readFromMemory(address);
+    auto oldCarry = flags.carry;
+    flags.carry = value & 0x1;
+    value = (value >> 1) | (oldCarry << 7);
+    updateNegativeFlag(value);
+    updateZeroFlag(value);
+    mmu->writeIntoMemory(address, value);
+    return 6;
+}
+
+template <>
+inline unsigned Cpu::ror<AddressingMode::AbsoluteIndexedX>()
+{
+    auto& flags = registers.getP();
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+    auto oldCarry = flags.carry;
+    flags.carry = value & 0x1;
+    value = (value >> 1) | (oldCarry << 7);
+    updateNegativeFlag(value);
+    updateZeroFlag(value);
+    mmu->writeIntoMemory(targetAddress, value);
+    return 7;
+}
+
+template <>
+inline unsigned Cpu::ror<AddressingMode::ZeroPage>()
+{
+    auto& flags = registers.getP();
+    auto address = fetchImmedate8();
+    auto value = mmu->readFromMemory(address);
+    auto oldCarry = flags.carry;
+    flags.carry = value & 0x1;
+    value = (value >> 1) | (oldCarry << 7);
+    updateNegativeFlag(value);
+    updateZeroFlag(value);
+    mmu->writeIntoMemory(address, value);
+    return 5;
+}
+
+template <>
+inline unsigned Cpu::ror<AddressingMode::ZeroPageIndexedX>()
+{
+    auto& flags = registers.getP();
+    auto baseAddress = fetchImmedate8();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+    auto oldCarry = flags.carry;
+    flags.carry = value & 0x1;
+    value = (value >> 1) | (oldCarry << 7);
+    updateNegativeFlag(value);
+    updateZeroFlag(value);
+    mmu->writeIntoMemory(targetAddress, value);
+    return 6;
+}
+
+/**
  * NOP - No operation 
  */
 template <AddressingMode Mode>
