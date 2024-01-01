@@ -1690,6 +1690,254 @@ inline unsigned Cpu::ora<AddressingMode::IndirectY>()
 }
 
 /**
+ * BCC - Branch on Carry Clear 
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::bcc()
+{
+    static_assert("Unsupported addressing mode used in BCC instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::bcc<AddressingMode::Relative>()
+{
+    unsigned cycles = 2;
+    auto flags = registers.getP();
+    s8 offset = fetchImmedate8();
+    auto& pc = registers.getPc();
+    auto oldPc = pc;
+
+    if(!flags.carry) {
+        cycles++;
+        pc += offset;
+    }
+    
+    if(checkForPageCross(oldPc, pc)) {
+        cycles++;
+    }
+
+    return cycles;
+}
+
+/**
+ * BCS - Branch on Carry Set 
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::bcs()
+{
+    static_assert("Unsupported addressing mode used in BCS instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::bcs<AddressingMode::Relative>()
+{
+    unsigned cycles = 2;
+    auto flags = registers.getP();
+    s8 offset = fetchImmedate8();
+    auto& pc = registers.getPc();
+    auto oldPc = pc;
+
+    if(flags.carry) {
+        cycles++;
+        pc += offset;
+    }
+    
+    if(checkForPageCross(oldPc, pc)) {
+        cycles++;
+    }
+
+    return cycles;
+}
+
+/**
+ * BEQ - Branch on Result zero
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::beq()
+{
+    static_assert("Unsupported addressing mode used in BEQ instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::beq<AddressingMode::Relative>()
+{
+    unsigned cycles = 2;
+    auto flags = registers.getP();
+    s8 offset = fetchImmedate8();
+    auto& pc = registers.getPc();
+    auto oldPc = pc;
+
+    if(flags.zero) {
+        cycles++;
+        pc += offset;
+    }
+    
+    if(checkForPageCross(oldPc, pc)) {
+        cycles++;
+    }
+
+    return cycles;
+}
+
+/**
+ * BMI - Branch on Result Minus
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::bmi()
+{
+    static_assert("Unsupported addressing mode used in BMI instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::bmi<AddressingMode::Relative>()
+{
+    unsigned cycles = 2;
+    auto flags = registers.getP();
+    s8 offset = fetchImmedate8();
+    auto& pc = registers.getPc();
+    auto oldPc = pc;
+
+    if(flags.negative) {
+        cycles++;
+        pc += offset;
+    }
+    
+    if(checkForPageCross(oldPc, pc)) {
+        cycles++;
+    }
+
+    return cycles;
+}
+
+/**
+ * BNE - Branch on Result Not Zero 
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::bne()
+{
+    static_assert("Unsupported addressing mode used in BNE instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::bne<AddressingMode::Relative>()
+{
+    unsigned cycles = 2;
+    auto flags = registers.getP();
+    s8 offset = fetchImmedate8();
+    auto& pc = registers.getPc();
+    auto oldPc = pc;
+
+    if(!flags.zero) {
+        cycles++;
+        pc += offset;
+    }
+    
+    if(checkForPageCross(oldPc, pc)) {
+        cycles++;
+    }
+
+    return cycles;
+}
+
+/**
+ * BPL - Branch on Result Plus
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::bpl()
+{
+    static_assert("Unsupported addressing mode used in BPL instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::bpl<AddressingMode::Relative>()
+{
+    unsigned cycles = 2;
+    auto flags = registers.getP();
+    s8 offset = fetchImmedate8();
+    auto& pc = registers.getPc();
+    auto oldPc = pc;
+
+    if(!flags.negative) {
+        cycles++;
+        pc += offset;
+    }
+    
+    if(checkForPageCross(oldPc, pc)) {
+        cycles++;
+    }
+
+    return cycles;
+}
+
+/**
+ * BVC - Branch on Overflow Clear 
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::bvc()
+{
+    static_assert("Unsupported addressing mode used in BVC instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::bvc<AddressingMode::Relative>()
+{
+    unsigned cycles = 2;
+    auto flags = registers.getP();
+    s8 offset = fetchImmedate8();
+    auto& pc = registers.getPc();
+    auto oldPc = pc;
+
+    if(!flags.overflow) {
+        cycles++;
+        pc += offset;
+    }
+    
+    if(checkForPageCross(oldPc, pc)) {
+        cycles++;
+    }
+
+    return cycles;
+}
+
+/**
+ * BVS - Branch on Overflow Set 
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::bvs()
+{
+    static_assert("Unsupported addressing mode used in BVS instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::bvs<AddressingMode::Relative>()
+{
+    unsigned cycles = 2;
+    auto flags = registers.getP();
+    s8 offset = fetchImmedate8();
+    auto& pc = registers.getPc();
+    auto oldPc = pc;
+
+    if(flags.overflow) {
+        cycles++;
+        pc += offset;
+    }
+    
+    if(checkForPageCross(oldPc, pc)) {
+        cycles++;
+    }
+
+    return cycles;
+}
+
+/**
  * NOP - No operation 
  */
 template <AddressingMode Mode>

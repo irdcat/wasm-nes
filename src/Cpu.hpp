@@ -90,9 +90,19 @@ class Cpu
         template <AddressingMode Mode> unsigned eor();          // EOR - Logical Exclusive OR (XOR)
         template <AddressingMode Mode> unsigned ora();          // ORA - Logical OR
 
+        // Conditional Branch instructions
+        template <AddressingMode Mode> unsigned bcc();          // BCC - Branch Carry Clear
+        template <AddressingMode Mode> unsigned bcs();          // BCS - Branch Carry Set
+        template <AddressingMode Mode> unsigned beq();          // BEQ - Branch Equal
+        template <AddressingMode Mode> unsigned bmi();          // BMI - Branch Minus
+        template <AddressingMode Mode> unsigned bne();          // BNE - Branch Not Equal
+        template <AddressingMode Mode> unsigned bpl();          // BPL - Branch Plus
+        template <AddressingMode Mode> unsigned bvc();          // BVC - Branch Overflow Clear
+        template <AddressingMode Mode> unsigned bvs();          // BVS - Branch Overflow Set
+
         // Other instructions
         template <AddressingMode Mode> unsigned nop();          // NOP - No operation
-        template <AddressingMode Mode> unsigned bit();          // BIT - Test bits in memory with Accumulator 
+        template <AddressingMode Mode> unsigned bit();          // BIT - Test bit
 };
 
 #include "Cpu.inl"
