@@ -100,6 +100,12 @@ class Cpu
         template <AddressingMode Mode> unsigned bvc();          // BVC - Branch Overflow Clear
         template <AddressingMode Mode> unsigned bvs();          // BVS - Branch Overflow Set
 
+        // Shift and Rotate instructions
+        template <AddressingMode Mode> unsigned asl();          // ASL - Arithmetic Shift Left
+        template <AddressingMode Mode> unsigned lsr();          // LSR - Logical Shift Right
+        template <AddressingMode Mode> unsigned rol();          // ROL - Rotate Left
+        template <AddressingMode Mode> unsigned ror();          // ROR - Rotate Right
+
         // Other instructions
         template <AddressingMode Mode> unsigned nop();          // NOP - No operation
         template <AddressingMode Mode> unsigned bit();          // BIT - Test bit

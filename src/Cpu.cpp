@@ -30,15 +30,15 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x03: break; // SLO indirect X [Unofficial]
         case 0x04: break; // NOP zero-page [Unofficial]
         case 0x05: return ora<AddressingMode::ZeroPage>(); // ORA zero-page
-        case 0x06: break; // ASL zero-page
+        case 0x06: return asl<AddressingMode::ZeroPage>(); // ASL zero-page
         case 0x07: break; // SLO zero-page [Unofficial]
         case 0x08: return php<AddressingMode::Implied>(); // PHP implied
         case 0x09: return ora<AddressingMode::Immediate>(); // ORA immediate
-        case 0x0A: break; // ASL accumulator
+        case 0x0A: return asl<AddressingMode::Accumulator>(); // ASL accumulator
         case 0x0B: break; // ANC immediate [Unofficial]
         case 0x0C: break; // NOP absolute [Unofficial]
         case 0x0D: return ora<AddressingMode::Absolute>(); // ORA absolute
-        case 0x0E: break; // ASL absolute
+        case 0x0E: return asl<AddressingMode::Absolute>(); // ASL absolute
         case 0x0F: break; // SLO absolute [Unofficial]
         case 0x10: return bpl<AddressingMode::Relative>(); // BPL relative
         case 0x11: return ora<AddressingMode::IndirectY>(); // ORA indirect Y
@@ -46,7 +46,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x13: break; // SLO indirect Y [Unofficial]
         case 0x14: break; // NOP zero-page indexed X [Unofficial]
         case 0x15: return ora<AddressingMode::ZeroPageIndexedX>(); // ORA zero-page indexed X
-        case 0x16: break; // ASL zero-page indexed X
+        case 0x16: return asl<AddressingMode::ZeroPageIndexedX>(); // ASL zero-page indexed X
         case 0x17: break; // SLO zero-page indexed X [Unofficial]
         case 0x18: return clc<AddressingMode::Implied>(); // CLC implied
         case 0x19: return ora<AddressingMode::AbsoluteIndexedY>(); // ORA absolute indexed Y
@@ -54,7 +54,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x1B: break; // SLO absolute indexed Y [Unofficial]
         case 0x1C: break; // NOP absolute indexed X [Unofficial]
         case 0x1D: return ora<AddressingMode::AbsoluteIndexedX>(); // ORA absolute indexed X
-        case 0x1E: break; // ASL absolute indexed X
+        case 0x1E: return asl<AddressingMode::AbsoluteIndexedX>(); // ASL absolute indexed X
         case 0x1F: break; // SLO absolute indexed X [Unofficial]
         case 0x20: return jsr<AddressingMode::Absolute>(); // JSR absolute
         case 0x21: return _and<AddressingMode::IndirectX>(); // AND indirect X
@@ -62,15 +62,15 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x23: break; // RLA indirect X [Unofficial]
         case 0x24: return bit<AddressingMode::ZeroPage>(); // BIT zero-page
         case 0x25: return _and<AddressingMode::ZeroPage>(); // AND zero-page
-        case 0x26: break; // ROL zero-page
+        case 0x26: return rol<AddressingMode::ZeroPage>(); // ROL zero-page
         case 0x27: break; // RLA zero-page [Unofficial]
         case 0x28: return plp<AddressingMode::Implied>(); // PLP implied
         case 0x29: return _and<AddressingMode::Immediate>(); // AND immediate
-        case 0x2A: break; // ROL accumulator
+        case 0x2A: return rol<AddressingMode::Accumulator>(); // ROL accumulator
         case 0x2B: break; // ANC immediate [Unofficial]
         case 0x2C: return bit<AddressingMode::Absolute>(); // BIT absolute
         case 0x2D: return _and<AddressingMode::Absolute>(); // AND absolute
-        case 0x2E: break; // ROL absolute
+        case 0x2E: return rol<AddressingMode::Absolute>(); // ROL absolute
         case 0x2F: break; // RLA absolute [Unofficial]
         case 0x30: return bmi<AddressingMode::Relative>(); // BMI relative
         case 0x31: return _and<AddressingMode::IndirectY>(); // AND indirect Y
@@ -78,7 +78,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x33: break; // RLA indirect Y [Unofficial]
         case 0x34: break; // NOP zero-page indexed X [Unofficial]
         case 0x35: return _and<AddressingMode::ZeroPageIndexedX>(); // AND zero-page indexed X
-        case 0x36: break; // ROL zero-page indexed X
+        case 0x36: return rol<AddressingMode::ZeroPageIndexedX>(); // ROL zero-page indexed X
         case 0x37: break; // RLA zero-page indexed X [Unofficial]
         case 0x38: return sec<AddressingMode::Implied>(); // SEC implied
         case 0x39: return _and<AddressingMode::AbsoluteIndexedY>(); // AND absolute indexed Y
@@ -86,7 +86,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x3B: break; // RLA absolute indexed Y [Unofficial]
         case 0x3C: break; // NOP absolute indexed X [Unofficial]
         case 0x3D: return _and<AddressingMode::AbsoluteIndexedX>(); // AND absolute indexed X
-        case 0x3E: break; // ROL absolute indexed X
+        case 0x3E: return rol<AddressingMode::AbsoluteIndexedX>(); // ROL absolute indexed X
         case 0x3F: break; // RLA absolute indexed X [Unofficial]
         case 0x40: break; // RTI implied
         case 0x41: return eor<AddressingMode::IndirectX>(); // EOR indirect X
@@ -94,15 +94,15 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x43: break; // SRE indirect X [Unofficial]
         case 0x44: break; // NOP zero-page [Unofficial]
         case 0x45: return eor<AddressingMode::ZeroPage>(); // EOR zero-page
-        case 0x46: break; // LSR zero-page
+        case 0x46: return lsr<AddressingMode::ZeroPage>(); // LSR zero-page
         case 0x47: break; // SRE zero-page [Unofficial]
         case 0x48: return pha<AddressingMode::Implied>(); // PHA implied
         case 0x49: return eor<AddressingMode::Immediate>(); // EOR immediate
-        case 0x4A: break; // LSR accumulator
+        case 0x4A: return lsr<AddressingMode::Accumulator>(); // LSR accumulator
         case 0x4B: break; // ALR immediate [Unofficial]
         case 0x4C: return jmp<AddressingMode::Absolute>(); // JMP absolute
         case 0x4D: return eor<AddressingMode::Absolute>(); // EOR absolute
-        case 0x4E: break; // LSR absolute
+        case 0x4E: return lsr<AddressingMode::Absolute>(); // LSR absolute
         case 0x4F: break; // SRE absolute [Unofficial]
         case 0x50: return bvc<AddressingMode::Relative>(); // BVC relative
         case 0x51: return eor<AddressingMode::IndirectY>(); // EOR indirect Y
@@ -110,7 +110,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x53: break; // SRE indirect Y [Unofficial]
         case 0x54: break; // NOP zero-page indexed X [Unofficial]
         case 0x55: return eor<AddressingMode::ZeroPageIndexedX>(); // EOR zero-page indexed X
-        case 0x56: break; // LSR zero-page indexed X
+        case 0x56: return lsr<AddressingMode::ZeroPageIndexedX>(); // LSR zero-page indexed X
         case 0x57: break; // SRE zero-page indexed X [Unofficial]
         case 0x58: return cli<AddressingMode::Implied>(); // CLI implied
         case 0x59: return eor<AddressingMode::AbsoluteIndexedY>(); // EOR absolute indexed Y
@@ -118,7 +118,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x5B: break; // SRE absolute indexed Y [Unofficial]
         case 0x5C: break; // NOP absolute indexed X [Unofficial]
         case 0x5D: return eor<AddressingMode::AbsoluteIndexedX>(); // EOR absolute indexed X
-        case 0x5E: break; // LSR absolute indexed X
+        case 0x5E: return lsr<AddressingMode::AbsoluteIndexedX>(); // LSR absolute indexed X
         case 0x5F: break; // SRE absolute indexed X [Unofficial]
         case 0x60: return rts<AddressingMode::Implied>(); // RTS implied
         case 0x61: return adc<AddressingMode::IndirectX>(); // ADC indirect X
@@ -126,15 +126,15 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x63: break; // RRA indirect X [Unofficial]
         case 0x64: break; // NOP zero-page [Unofficial]
         case 0x65: return adc<AddressingMode::ZeroPage>(); // ADC zero-page
-        case 0x66: break; // ROR zero-page
+        case 0x66: return ror<AddressingMode::ZeroPage>(); // ROR zero-page
         case 0x67: break; // RRA zero-page [Unofficial]
         case 0x68: return pla<AddressingMode::Implied>(); // PLA implied
         case 0x69: return adc<AddressingMode::Immediate>(); // ADC immediate
-        case 0x6A: break; // ROR accumulator
+        case 0x6A: return ror<AddressingMode::Accumulator>(); // ROR accumulator
         case 0x6B: break; // ARR immediate [Unofficial]
         case 0x6C: return jmp<AddressingMode::Indirect>(); // JMP indirect
         case 0x6D: return adc<AddressingMode::Absolute>(); // ADC absolute
-        case 0x6E: break; // ROR absolute
+        case 0x6E: return ror<AddressingMode::Absolute>(); // ROR absolute
         case 0x6F: break; // RRA absolute [Unofficial]
         case 0x70: return bvs<AddressingMode::Relative>(); // BVS relative
         case 0x71: return adc<AddressingMode::IndirectY>(); // ADC indirect Y
@@ -142,7 +142,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x73: break; // RRA indirect Y [Unofficial]
         case 0x74: break; // NOP zero-page indexed X [Unofficial]
         case 0x75: return adc<AddressingMode::ZeroPageIndexedX>(); // ADC zero-page indexed X
-        case 0x76: break; // ROR zero-page indexed X
+        case 0x76: return ror<AddressingMode::ZeroPageIndexedX>(); // ROR zero-page indexed X
         case 0x77: break; // RRA zero-page indexed X [Unofficial]
         case 0x78: return sei<AddressingMode::Implied>(); // SEI implied
         case 0x79: return adc<AddressingMode::AbsoluteIndexedY>(); // ADC absolute indexed Y
@@ -150,7 +150,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x7B: break; // RRA absolute indexed Y [Unofficial]
         case 0x7C: break; // NOP absolute indexed X [Unofficial]
         case 0x7D: return adc<AddressingMode::AbsoluteIndexedX>(); // ADC absolute indexed X
-        case 0x7E: break; // ROR absolute indexed X
+        case 0x7E: return ror<AddressingMode::AbsoluteIndexedX>(); // ROR absolute indexed X
         case 0x7F: break; // RRA absolute indexed X [Unofficial]
         case 0x80: break; // NOP immediate [Unofficial]
         case 0x81: return sta<AddressingMode::IndirectX>(); // STA indirect X
