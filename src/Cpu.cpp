@@ -60,7 +60,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x21: return _and<AddressingMode::IndirectX>(); // AND indirect X
         case 0x22: break; // STP [Unofficial]
         case 0x23: break; // RLA indirect X [Unofficial]
-        case 0x24: break; // BIT zero-page
+        case 0x24: return bit<AddressingMode::ZeroPage>(); // BIT zero-page
         case 0x25: return _and<AddressingMode::ZeroPage>(); // AND zero-page
         case 0x26: break; // ROL zero-page
         case 0x27: break; // RLA zero-page [Unofficial]
@@ -68,7 +68,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x29: return _and<AddressingMode::Immediate>(); // AND immediate
         case 0x2A: break; // ROL accumulator
         case 0x2B: break; // ANC immediate [Unofficial]
-        case 0x2C: break; // BIT absolute
+        case 0x2C: return bit<AddressingMode::Absolute>(); // BIT absolute
         case 0x2D: return _and<AddressingMode::Absolute>(); // AND absolute
         case 0x2E: break; // ROL absolute
         case 0x2F: break; // RLA absolute [Unofficial]
@@ -258,7 +258,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0xE7: break; // ISC zero-page [Unofficial]
         case 0xE8: return inx<AddressingMode::Implied>(); // INX implied
         case 0xE9: return sbc<AddressingMode::Immediate>(); // SBC immediate
-        case 0xEA: break; // NOP
+        case 0xEA: return nop<AddressingMode::Implied>(); // NOP
         case 0xEB: break; // USBC immediate [Unofficial]
         case 0xEC: break; // CPX absolute
         case 0xED: return sbc<AddressingMode::Absolute>(); // SBC absolute

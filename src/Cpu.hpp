@@ -89,6 +89,10 @@ class Cpu
         template <AddressingMode Mode> unsigned _and();         // AND - Logical AND
         template <AddressingMode Mode> unsigned eor();          // EOR - Logical Exclusive OR (XOR)
         template <AddressingMode Mode> unsigned ora();          // ORA - Logical OR
+
+        // Other instructions
+        template <AddressingMode Mode> unsigned nop();          // NOP - No operation
+        template <AddressingMode Mode> unsigned bit();          // BIT - Test bits in memory with Accumulator 
 };
 
 #include "Cpu.inl"

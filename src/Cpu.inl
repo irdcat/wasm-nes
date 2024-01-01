@@ -1688,3 +1688,57 @@ inline unsigned Cpu::ora<AddressingMode::IndirectY>()
     updateNegativeFlag(accumulator);
     return checkForPageCross(baseAddress, targetAddress) ? 6 : 5;
 }
+
+/**
+ * NOP - No operation 
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::nop()
+{
+    static_assert("Unsupported addressing mode used in NOP instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::nop<AddressingMode::Implied>()
+{
+    return 2;
+}
+
+/**
+ * BIT - Test bits in memory with Accumulator 
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::bit()
+{
+    static_assert("Unsupported addressing mode used in BIT instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::bit<AddressingMode::Absolute>()
+{
+    auto accumulator = registers.getA();
+    auto& flags = registers.getP();
+    auto address = fetchImmedate16();
+    auto operand = mmu->readFromMemory(address);
+    updateNegativeFlag(operand);
+    flags.overflow = (operand >> 6) & 0x1;
+    auto result = accumulator & operand;
+    updateZeroFlag(result);
+    return 4;
+}
+
+template <>
+inline unsigned Cpu::bit<AddressingMode::ZeroPage>()
+{
+    auto accumulator = registers.getA();
+    auto& flags = registers.getP();
+    auto address = fetchImmedate8();
+    auto operand = mmu->readFromMemory(address);
+    updateNegativeFlag(operand);
+    flags.overflow = (operand >> 6) & 0x1;
+    auto result = accumulator & operand;
+    updateZeroFlag(result);
+    return 3;
+}
