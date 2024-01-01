@@ -38,6 +38,7 @@ struct NesTestLogData
     u8 stackPointer;        // Value of Stack pointer
     u8 cycleCounter;        // Amount of cycles performed
     std::string line;
+    std::string prevLine;
     unsigned lineNumber;
 };
 
@@ -62,6 +63,7 @@ class NesTestLogParser
         NesTestLogData parseNextLine() 
         {
             static unsigned lineNumberCounter = 0;
+            static std::string previousLine;
 
             std::string line;
             std::getline(nesTestLogStream, line);
@@ -70,7 +72,8 @@ class NesTestLogParser
             NesTestLogData data;
             
             data.line = line;
-            data.lineNumber = lineNumberCounter++;
+            data.prevLine = previousLine;
+            data.lineNumber = ++lineNumberCounter;
 
             std::string addressString;
             iss >> addressString;
@@ -108,6 +111,7 @@ class NesTestLogParser
                 }
             }
 
+            previousLine = line;
             return data;
         }
 
@@ -153,15 +157,21 @@ int main()
     auto& pc = cpu->getRegisters().getPc();
     pc = NES_TEST_START_ADDR;
 
-    auto printAssertionError = [](auto valueName, auto expected, auto actual, auto line, auto lineNumber, bool useHex) {
+    auto printAssertionError = [](auto valueName, auto expected, auto actual, auto line, auto previousLine, auto lineNumber, bool useHex) {
         std::cout << "Actual " << valueName << " does not match the expected one" << std::endl
                     << (useHex ? std::hex : std::dec) 
                     << "Expected: " << (unsigned)expected << " Actual: " << (unsigned)actual << std::endl
-                    << "Log line: " << std::endl
-                    << std::dec << lineNumber << "\t" << line << std::endl;
+                    << "Log lines: " << std::endl;
+        
+        if(lineNumber != 1)
+        {
+            std::cout << std::dec << lineNumber - 1 << "\t" << previousLine << std::endl;
+        }
+
+        std::cout << std::dec << lineNumber << "\t" << line << std::endl;
     };
 
-    unsigned cycleCounter = 0;
+    unsigned cycleCounter = 7;
     while(nesTestLogParser.canParseNextLine())
     {
         auto expected = nesTestLogParser.parseNextLine();
@@ -169,32 +179,32 @@ int main()
 
         if(registers.getPc() != expected.instructionAddress)
         {
-            printAssertionError("PC", expected.instructionAddress, registers.getPc(), expected.line, expected.lineNumber, true);
+            printAssertionError("PC", expected.instructionAddress, registers.getPc(), expected.line, expected.prevLine, expected.lineNumber, true);
             return 1;
         }
         if(registers.getA() != expected.registerA)
         {
-            printAssertionError("A", expected.registerA, registers.getA(), expected.line, expected.lineNumber, true);
+            printAssertionError("A", expected.registerA, registers.getA(), expected.line, expected.prevLine, expected.lineNumber, true);
             return 1;
         }
         if(registers.getX() != expected.registerX)
         {
-            printAssertionError("X", expected.registerX, registers.getX(), expected.line, expected.lineNumber, true);
+            printAssertionError("X", expected.registerX, registers.getX(), expected.line, expected.prevLine, expected.lineNumber, true);
             return 1;
         }
         if(registers.getY() != expected.registerY)
         {
-            printAssertionError("Y", expected.registerY, registers.getY(), expected.line, expected.lineNumber, true);
+            printAssertionError("Y", expected.registerY, registers.getY(), expected.line, expected.prevLine, expected.lineNumber, true);
             return 1;
         }
         if(registers.getP() != expected.registerP)
         {
-            printAssertionError("P", expected.registerP, registers.getP(), expected.line, expected.lineNumber, true);
+            printAssertionError("P", expected.registerP, registers.getP(), expected.line, expected.prevLine, expected.lineNumber, true);
             return 1;
         }
         if(registers.getS() != expected.stackPointer)
         {
-            printAssertionError("SP", expected.stackPointer, registers.getS(), expected.line, expected.lineNumber, true);
+            printAssertionError("SP", expected.stackPointer, registers.getS(), expected.line, expected.prevLine, expected.lineNumber, true);
             return 1;
         }
 
@@ -202,17 +212,16 @@ int main()
 
         if(opcode != expected.opcode)
         {
-            printAssertionError("opcode", expected.opcode, opcode, expected.line, expected.lineNumber, true);
+            printAssertionError("opcode", expected.opcode, opcode, expected.line, expected.prevLine, expected.lineNumber, true);
+            return 1;
+        }
+        if(cycleCounter != expected.cycleCounter)
+        {
+            printAssertionError("cycle count", expected.cycleCounter, cycleCounter, expected.line, expected.prevLine, expected.lineNumber, false);
             return 1;
         }
 
         cycleCounter += cpu->executeInstruction(opcode);
-
-        if(cycleCounter != expected.cycleCounter)
-        {
-            printAssertionError("cycle count", expected.cycleCounter, cycleCounter, expected.line, expected.lineNumber, false);
-            return 1;
-        }
     }
 
     return 0;

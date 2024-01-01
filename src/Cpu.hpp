@@ -32,8 +32,12 @@ class Cpu
         u16 popFromStack16();
         void pushIntoStack16(u16 value);
 
-        template <AddressingMode Mode> u8 resolveOperand8();
-        template <AddressingMode Mode> u16 resolveOperand16();
+        void updateZeroFlag(auto value);
+        void updateNegativeFlag(auto value);
+        void updateOverflowFlag(auto valueBefore, auto valueAfter);
+        void updateCarryFlag(auto value);
+
+        bool checkForPageCross(u16 oldAddress, u16 newAddress);
 
         // Load/Transfer instructions
         template <AddressingMode Mode> unsigned lda();          // LDA - Load A
@@ -82,7 +86,7 @@ class Cpu
         template <AddressingMode Mode> unsigned sbc();          // SBC - Subtract with Carry
 
         // Logical instructions
-        template <AddressingMode Mode> unsigned _and();          // AND - Logical AND
+        template <AddressingMode Mode> unsigned _and();         // AND - Logical AND
         template <AddressingMode Mode> unsigned eor();          // EOR - Logical Exclusive OR (XOR)
         template <AddressingMode Mode> unsigned ora();          // ORA - Logical OR
 };
