@@ -40,7 +40,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x0D: return ora<AddressingMode::Absolute>(); // ORA absolute
         case 0x0E: break; // ASL absolute
         case 0x0F: break; // SLO absolute [Unofficial]
-        case 0x10: break; // BPL relative
+        case 0x10: return bpl<AddressingMode::Relative>(); // BPL relative
         case 0x11: return ora<AddressingMode::IndirectY>(); // ORA indirect Y
         case 0x12: break; // STP [Unofficial]
         case 0x13: break; // SLO indirect Y [Unofficial]
@@ -72,7 +72,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x2D: return _and<AddressingMode::Absolute>(); // AND absolute
         case 0x2E: break; // ROL absolute
         case 0x2F: break; // RLA absolute [Unofficial]
-        case 0x30: break; // BMI relative
+        case 0x30: return bmi<AddressingMode::Relative>(); // BMI relative
         case 0x31: return _and<AddressingMode::IndirectY>(); // AND indirect Y
         case 0x32: break; // STP [Unofficial]
         case 0x33: break; // RLA indirect Y [Unofficial]
@@ -104,7 +104,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x4D: return eor<AddressingMode::Absolute>(); // EOR absolute
         case 0x4E: break; // LSR absolute
         case 0x4F: break; // SRE absolute [Unofficial]
-        case 0x50: break; // BVC relative
+        case 0x50: return bvc<AddressingMode::Relative>(); // BVC relative
         case 0x51: return eor<AddressingMode::IndirectY>(); // EOR indirect Y
         case 0x52: break; // STP [Unofficial]
         case 0x53: break; // SRE indirect Y [Unofficial]
@@ -136,7 +136,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x6D: return adc<AddressingMode::Absolute>(); // ADC absolute
         case 0x6E: break; // ROR absolute
         case 0x6F: break; // RRA absolute [Unofficial]
-        case 0x70: break; // BVS relative
+        case 0x70: return bvs<AddressingMode::Relative>(); // BVS relative
         case 0x71: return adc<AddressingMode::IndirectY>(); // ADC indirect Y
         case 0x72: break; // STP [Unofficial]
         case 0x73: break; // RRA indirect Y [Unofficial]
@@ -168,7 +168,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x8D: return sta<AddressingMode::Absolute>(); // STA absolute
         case 0x8E: return stx<AddressingMode::Absolute>(); // STX absolute
         case 0x8F: break; // SAX absolute [Unofficial]
-        case 0x90: break; // BCC relative
+        case 0x90: return bcc<AddressingMode::Relative>(); // BCC relative
         case 0x91: return sta<AddressingMode::IndirectY>(); // STA indirect Y
         case 0x92: break; // STP [Unofficial]
         case 0x93: break; // AHX indirect Y
@@ -200,7 +200,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0xAD: return lda<AddressingMode::Absolute>(); // LDA absolute
         case 0xAE: return ldx<AddressingMode::Absolute>(); // LDX absolute
         case 0xAF: break; // LAX absolute [Unofficial]
-        case 0xB0: break; // BCS relative
+        case 0xB0: return bcs<AddressingMode::Relative>(); // BCS relative
         case 0xB1: return lda<AddressingMode::IndirectY>(); // LDA indirect Y
         case 0xB2: break; // STP [Unofficial]
         case 0xB3: break; // LAX indirect Y [Unofficial]
@@ -232,7 +232,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0xCD: break; // CMP absolute
         case 0xCE: return dec<AddressingMode::Absolute>(); // DEC absolute
         case 0xCF: break; // DCP absolute [Unofficial]
-        case 0xD0: break; // BNE relative
+        case 0xD0: return bne<AddressingMode::Relative>(); // BNE relative
         case 0xD1: break; // CMP indirect Y
         case 0xD2: break; // STP [Unofficial]
         case 0xD3: break; // DCP indirect Y [Unofficial]
@@ -264,7 +264,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0xED: return sbc<AddressingMode::Absolute>(); // SBC absolute
         case 0xEE: return inc<AddressingMode::Absolute>(); // INC absolute
         case 0xEF: break; // ISC absolute [Unofficial]
-        case 0xF0: break; // BEQ relative
+        case 0xF0: return beq<AddressingMode::Relative>(); // BEQ relative
         case 0xF1: return sbc<AddressingMode::IndirectY>(); // SBC indirect Y
         case 0xF2: break; // STP [Unofficial]
         case 0xF3: break; // ISC indirect Y [Unofficial]
