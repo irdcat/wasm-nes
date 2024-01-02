@@ -216,43 +216,43 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0xBD: return lda<AddressingMode::AbsoluteIndexedX>(); // LDA absolute indexed X
         case 0xBE: return ldx<AddressingMode::AbsoluteIndexedY>(); // LDX absolute indexed Y
         case 0xBF: break; // LAX absolute indexed Y [Unofficial]
-        case 0xC0: break; // CPY immediate
-        case 0xC1: break; // CMP indirect X
+        case 0xC0: return cpy<AddressingMode::Immediate>(); // CPY immediate
+        case 0xC1: return cmp<AddressingMode::IndirectX>(); // CMP indirect X
         case 0xC2: break; // NOP immediate [Unofficial]
         case 0xC3: break; // DCP indirect X [Unofficial]
-        case 0xC4: break; // CPY zero-page
-        case 0xC5: break; // CMP zero-page
+        case 0xC4: return cpy<AddressingMode::ZeroPage>(); // CPY zero-page
+        case 0xC5: return cmp<AddressingMode::ZeroPage>(); // CMP zero-page
         case 0xC6: return dec<AddressingMode::ZeroPage>(); // DEC zero-page
         case 0xC7: break; // DCP zero-page [Unofficial]
         case 0xC8: return iny<AddressingMode::Implied>(); // INY implied
-        case 0xC9: break; // CMP immediate
+        case 0xC9: return cmp<AddressingMode::Immediate>(); // CMP immediate
         case 0xCA: return dex<AddressingMode::Implied>(); // DEX implied
-        case 0xCB: break; // AXS immediate
-        case 0xCC: break; // CPY absolute
-        case 0xCD: break; // CMP absolute
+        case 0xCB: break; // AXS immediate [Unofficial]
+        case 0xCC: return cpy<AddressingMode::Absolute>(); // CPY absolute
+        case 0xCD: return cmp<AddressingMode::Absolute>(); // CMP absolute
         case 0xCE: return dec<AddressingMode::Absolute>(); // DEC absolute
         case 0xCF: break; // DCP absolute [Unofficial]
         case 0xD0: return bne<AddressingMode::Relative>(); // BNE relative
-        case 0xD1: break; // CMP indirect Y
+        case 0xD1: return cmp<AddressingMode::IndirectY>(); // CMP indirect Y
         case 0xD2: break; // STP [Unofficial]
         case 0xD3: break; // DCP indirect Y [Unofficial]
         case 0xD4: break; // NOP zero-page indexed X [Unofficial]
-        case 0xD5: break; // CMP zero-page indexed X
+        case 0xD5: return cmp<AddressingMode::ZeroPageIndexedX>(); // CMP zero-page indexed X
         case 0xD6: return dec<AddressingMode::ZeroPageIndexedX>(); // DEC zero-page indexed X
         case 0xD7: break; // DCP zero-page indexed X [Unofficial]
         case 0xD8: return cld<AddressingMode::Implied>(); // CLD implied
-        case 0xD9: break; // CMP absolute indexed Y
+        case 0xD9: return cmp<AddressingMode::AbsoluteIndexedY>(); // CMP absolute indexed Y
         case 0xDA: break; // NOP implied [Unofficial]
         case 0xDB: break; // DCP absolute indexed Y [Unofficial]
         case 0xDC: break; // NOP absolute indexed X [Unofficial]
-        case 0xDD: break; // CMP absolute indexed X
+        case 0xDD: return cmp<AddressingMode::AbsoluteIndexedX>(); // CMP absolute indexed X
         case 0xDE: return dec<AddressingMode::AbsoluteIndexedX>(); // DEC absolute indexed X
         case 0xDF: break; // DCP absolute indexed X [Unofficial]
-        case 0xE0: break; // CPX immediate
+        case 0xE0: return cpx<AddressingMode::Immediate>(); // CPX immediate
         case 0xE1: return sbc<AddressingMode::IndirectX>(); // SBC indirect X
         case 0xE2: break; // NOP immediate [Unofficial]
         case 0xE3: break; // ISC indirect X [Unofficial]
-        case 0xE4: break; // CPX zero-page
+        case 0xE4: return cpx<AddressingMode::ZeroPage>(); // CPX zero-page
         case 0xE5: return sbc<AddressingMode::ZeroPage>(); // SBC zero-page
         case 0xE6: return inc<AddressingMode::ZeroPage>(); // INC zero-page
         case 0xE7: break; // ISC zero-page [Unofficial]
@@ -260,7 +260,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0xE9: return sbc<AddressingMode::Immediate>(); // SBC immediate
         case 0xEA: return nop<AddressingMode::Implied>(); // NOP
         case 0xEB: break; // USBC immediate [Unofficial]
-        case 0xEC: break; // CPX absolute
+        case 0xEC: return cpx<AddressingMode::Absolute>(); // CPX absolute
         case 0xED: return sbc<AddressingMode::Absolute>(); // SBC absolute
         case 0xEE: return inc<AddressingMode::Absolute>(); // INC absolute
         case 0xEF: break; // ISC absolute [Unofficial]

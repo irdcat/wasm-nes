@@ -106,6 +106,11 @@ class Cpu
         template <AddressingMode Mode> unsigned rol();          // ROL - Rotate Left
         template <AddressingMode Mode> unsigned ror();          // ROR - Rotate Right
 
+        // Comparison instructions
+        template <AddressingMode Mode> unsigned cmp();          // CMP - Compare with Accumulator
+        template <AddressingMode Mode> unsigned cpx();          // CPX - Compare with X
+        template <AddressingMode Mode> unsigned cpy();          // CPY - Compare with Y
+
         // Other instructions
         template <AddressingMode Mode> unsigned nop();          // NOP - No operation
         template <AddressingMode Mode> unsigned bit();          // BIT - Test bit
