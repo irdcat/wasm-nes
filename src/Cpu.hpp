@@ -22,6 +22,7 @@ class Cpu
     private:
         std::shared_ptr<Mmu> mmu;
         CpuRegisters registers;
+        bool halted;
 
         u8 fetchImmedate8();
         u16 fetchImmedate16();
@@ -114,6 +115,29 @@ class Cpu
         // Other instructions
         template <AddressingMode Mode> unsigned nop();          // NOP - No operation
         template <AddressingMode Mode> unsigned bit();          // BIT - Test bit
+
+        // Unofficial instructions
+        template <AddressingMode Mode> unsigned alr();          // ALR - AND + LSR
+        template <AddressingMode Mode> unsigned anc();          // ANC - AND + Set carry as Shift/Rotate instruction
+        template <AddressingMode Mode> unsigned xaa();          // XAA - AND X + AND
+        template <AddressingMode Mode> unsigned arr();          // ARR - AND + ROR
+        template <AddressingMode Mode> unsigned dcp();          // DCP - DEC + CMP
+        template <AddressingMode Mode> unsigned isc();          // ISC - INC + SBC
+        template <AddressingMode Mode> unsigned las();          // LAS - LDA/TSX
+        template <AddressingMode Mode> unsigned lax();          // LAX - LDA + LDX
+        template <AddressingMode Mode> unsigned lxa();          // LXA - A and M -> A -> X
+        template <AddressingMode Mode> unsigned rla();          // RLA - ROL + AND
+        template <AddressingMode Mode> unsigned rra();          // RRA - ROR + ADC
+        template <AddressingMode Mode> unsigned sax();          // SAX - A and X -> M
+        template <AddressingMode Mode> unsigned axs();          // AXS - (A and X) - M -> X
+        template <AddressingMode Mode> unsigned ahx();          // AHX - A and X and (high-byte of addr + 1) -> M
+        template <AddressingMode Mode> unsigned shx();          // SHX - X and (high-byte of addr + 1) -> M
+        template <AddressingMode Mode> unsigned shy();          // SHY - Y and (high-byte of addr + 1) -> M
+        template <AddressingMode Mode> unsigned slo();          // SLO - ASL + ORA
+        template <AddressingMode Mode> unsigned sre();          // SRE - LSR + EOR
+        template <AddressingMode Mode> unsigned tas();          // TAS - A and X -> SP, A and X and (high-byte of addr + 1) -> M
+        template <AddressingMode Mode> unsigned usbc();         // USBC - SBC + NOP
+        template <AddressingMode Mode> unsigned stp();          // STP - Freeze the CPU
 };
 
 #include "Cpu.inl"
