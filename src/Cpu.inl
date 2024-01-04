@@ -2396,7 +2396,7 @@ template <>
 inline unsigned Cpu::cmp<AddressingMode::IndirectY>()
 {
     auto& accumulator = registers.getA();
-    auto flags = registers.getP();
+    auto& flags = registers.getP();
     auto index = registers.getY();
     auto pointerAddress = fetchImmedate8();
     u16 baseAddress = mmu->readFromMemory(pointerAddress & 0xFF)
@@ -2564,4 +2564,1435 @@ inline unsigned Cpu::bit<AddressingMode::ZeroPage>()
     auto result = accumulator & operand;
     updateZeroFlag(result);
     return 3;
+}
+
+/**
+ * ALR [Unofficial] - AND oper + LSR
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::alr()
+{
+    static_assert("Unsupported addressing mode used in ALR instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::alr<AddressingMode::Immediate>()
+{
+    auto& accumulator = registers.getA();
+    auto& flags = registers.getP();
+    auto operand = fetchImmedate8();
+    accumulator &= operand;
+    flags.carry = accumulator & 0x1;
+    accumulator >>= 1;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+    return 2;
+}
+
+/**
+ * ANC [Unofficial] - AND oper + set carry as ASL/ROL 
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::anc()
+{
+    static_assert("Unsupported addressing mode used in ANC instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::anc<AddressingMode::Immediate>()
+{
+    auto& accumulator = registers.getA();
+    auto& flags = registers.getP();
+    auto operand = fetchImmedate8();
+    accumulator &= operand;
+    flags.carry = (accumulator >> 7) & 0x1;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+    return 2;
+}
+
+/**
+ * XAA [Unofficial] - A and X and oper -> A 
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::xaa()
+{
+    static_assert("Unsupported addressing mode used in XAA instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::xaa<AddressingMode::Immediate>()
+{
+    auto& accumulator = registers.getA();
+    auto x = registers.getX();
+    auto operand = fetchImmedate8();
+    accumulator = (accumulator | 0xFF) & x & operand;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+    return 2;
+}
+
+/**
+ * ARR [Unofficial] - AND oper + ROR
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::arr()
+{
+    static_assert("Unsupported addressing mode used in ARR instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::arr<AddressingMode::Immediate>()
+{
+    auto& accumulator = registers.getA();
+    auto& flags = registers.getP();
+    auto oldCarry = flags.carry;
+    auto operand = fetchImmedate8();
+    accumulator &= operand;
+    // Operation involves adder and flag is set according to (A and oper) + oper
+    updateOverflowFlag(accumulator, accumulator + operand);
+    flags.carry = accumulator & 0x1;
+    accumulator = (accumulator >> 1) | (oldCarry << 7);
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+    return 2;
+}
+
+/**
+ * DCP [Unofficial] - DEC oper + CMP oper
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::dcp()
+{
+    static_assert("Unsupported addressing mode used in DCP instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::dcp<AddressingMode::Absolute>()
+{
+    auto address = fetchImmedate16();
+    auto value = mmu->readFromMemory(address);
+
+    auto& flags = registers.getP();
+    value--;
+    auto accumulator = registers.getA();
+    s8 result = accumulator - value;
+    flags.carry = value > accumulator;
+    updateZeroFlag(result);
+    updateNegativeFlag(result);
+    
+    mmu->writeIntoMemory(address, value);
+    return 6;
+}
+
+template <>
+inline unsigned Cpu::dcp<AddressingMode::AbsoluteIndexedX>()
+{
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index; 
+    auto value = mmu->readFromMemory(targetAddress);
+
+    auto& flags = registers.getP();
+    value--;
+    auto accumulator = registers.getA();
+    s8 result = accumulator - value;
+    flags.carry = value > accumulator;
+    updateZeroFlag(result);
+    updateNegativeFlag(result);
+    
+    mmu->writeIntoMemory(targetAddress, value);
+    return 7;
+}
+
+template <>
+inline unsigned Cpu::dcp<AddressingMode::AbsoluteIndexedY>()
+{
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getY();
+    auto targetAddress = baseAddress + index; 
+    auto value = mmu->readFromMemory(targetAddress);
+
+    auto& flags = registers.getP();
+    value--;
+    auto accumulator = registers.getA();
+    s8 result = accumulator - value;
+    flags.carry = value > accumulator;
+    updateZeroFlag(result);
+    updateNegativeFlag(result);
+    
+    mmu->writeIntoMemory(targetAddress, value);
+    return 7;
+}
+
+template <>
+inline unsigned Cpu::dcp<AddressingMode::ZeroPage>()
+{
+    auto address = fetchImmedate8();
+    auto value = mmu->readFromMemory(address);
+
+    auto& flags = registers.getP();
+    value--;
+    auto accumulator = registers.getA();
+    s8 result = accumulator - value;
+    flags.carry = value > accumulator;
+    updateZeroFlag(result);
+    updateNegativeFlag(result);
+    
+    mmu->writeIntoMemory(address, value);
+    return 5;
+}
+
+template <>
+inline unsigned Cpu::dcp<AddressingMode::ZeroPageIndexedX>()
+{
+    auto baseAddress = fetchImmedate8();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index; 
+    auto value = mmu->readFromMemory(targetAddress);
+
+    auto& flags = registers.getP();
+    value--;
+    auto accumulator = registers.getA();
+    s8 result = accumulator - value;
+    flags.carry = value > accumulator;
+    updateZeroFlag(result);
+    updateNegativeFlag(result);
+    
+    mmu->writeIntoMemory(targetAddress, value);
+    return 6;
+}
+
+template <>
+inline unsigned Cpu::dcp<AddressingMode::IndirectX>()
+{
+    auto basePointerAddress = fetchImmedate8();
+    auto index = registers.getX();
+    auto targetPointerAddress = basePointerAddress + index;
+    auto address = mmu->readFromMemory(targetPointerAddress) |
+        mmu->readFromMemory(targetPointerAddress + 1) << 8;
+    auto value = mmu->readFromMemory(address);
+
+    auto& flags = registers.getP();
+    value--;
+    auto accumulator = registers.getA();
+    s8 result = accumulator - value;
+    flags.carry = value > accumulator;
+    updateZeroFlag(result);
+    updateNegativeFlag(result);
+
+    mmu->writeIntoMemory(address, value);
+    return 8;
+}
+
+template <>
+inline unsigned Cpu::dcp<AddressingMode::IndirectY>()
+{
+    auto pointerAddress = fetchImmedate8();
+    auto index = registers.getY();
+    auto baseAddress = mmu->readFromMemory(pointerAddress) | 
+        mmu->readFromMemory(pointerAddress + 1) << 8;
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+
+    auto& flags = registers.getP();
+    value--;
+    auto accumulator = registers.getA();
+    s8 result = accumulator - value;
+    flags.carry = value > accumulator;
+    updateZeroFlag(result);
+    updateNegativeFlag(result);
+
+    mmu->writeIntoMemory(targetAddress, value);
+    return 8;
+}
+
+/**
+ * ISC [Unofficial] - INC oper + SBC oper 
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::isc()
+{
+    static_assert("Unsupported addressing mode used in ISC instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::isc<AddressingMode::Absolute>()
+{
+    auto address = fetchImmedate16();
+    auto value = mmu->readFromMemory(address);
+
+    auto flags = registers.getP();
+    auto accumulator = registers.getA();
+    value++;
+    u16 result = accumulator - value - flags.carry;
+    updateCarryFlag(result);
+    updateOverflowFlag(accumulator, result);
+    accumulator = result & 0xFF;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+
+    mmu->writeIntoMemory(address, value);
+    return 6;
+}
+
+template <>
+inline unsigned Cpu::isc<AddressingMode::AbsoluteIndexedX>()
+{
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+
+    auto flags = registers.getP();
+    auto accumulator = registers.getA();
+    value++;
+    u16 result = accumulator - value - flags.carry;
+    updateCarryFlag(result);
+    updateOverflowFlag(accumulator, result);
+    accumulator = result & 0xFF;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+
+    mmu->writeIntoMemory(targetAddress, value);
+    return 7;
+}
+
+template <>
+inline unsigned Cpu::isc<AddressingMode::AbsoluteIndexedY>()
+{
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getY();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+
+    auto flags = registers.getP();
+    auto accumulator = registers.getA();
+    value++;
+    u16 result = accumulator - value - flags.carry;
+    updateCarryFlag(result);
+    updateOverflowFlag(accumulator, result);
+    accumulator = result & 0xFF;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+
+    mmu->writeIntoMemory(targetAddress, value);
+    return 7;
+}
+
+template <>
+inline unsigned Cpu::isc<AddressingMode::ZeroPage>()
+{
+    auto address = fetchImmedate8();
+    auto value = mmu->readFromMemory(address);
+
+    auto flags = registers.getP();
+    auto accumulator = registers.getA();
+    value++;
+    u16 result = accumulator - value - flags.carry;
+    updateCarryFlag(result);
+    updateOverflowFlag(accumulator, result);
+    accumulator = result & 0xFF;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+
+    mmu->writeIntoMemory(address, value);
+    return 5;
+}
+
+template <>
+inline unsigned Cpu::isc<AddressingMode::ZeroPageIndexedX>()
+{
+    auto baseAddress = fetchImmedate8();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+
+    auto flags = registers.getP();
+    auto accumulator = registers.getA();
+    value++;
+    u16 result = accumulator - value - flags.carry;
+    updateCarryFlag(result);
+    updateOverflowFlag(accumulator, result);
+    accumulator = result & 0xFF;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+
+    mmu->writeIntoMemory(targetAddress, value);
+    return 6;
+}
+
+template <>
+inline unsigned Cpu::isc<AddressingMode::IndirectX>()
+{
+    auto basePointerAddress = fetchImmedate8();
+    auto index = registers.getX();
+    auto targetPointerAddress = basePointerAddress + index;
+    auto address = mmu->readFromMemory(targetPointerAddress) |
+        mmu->readFromMemory(targetPointerAddress + 1) << 8;
+    auto value = mmu->readFromMemory(address);
+
+    auto flags = registers.getP();
+    auto accumulator = registers.getA();
+    value++;
+    u16 result = accumulator - value - flags.carry;
+    updateCarryFlag(result);
+    updateOverflowFlag(accumulator, result);
+    accumulator = result & 0xFF;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+
+    mmu->writeIntoMemory(address, value);
+    return 8;
+}
+
+template <>
+inline unsigned Cpu::isc<AddressingMode::IndirectY>()
+{
+    auto pointerAddress = fetchImmedate8();
+    auto index = registers.getY();
+    auto baseAddress = mmu->readFromMemory(pointerAddress) | 
+        mmu->readFromMemory(pointerAddress + 1) << 8;
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+
+    auto flags = registers.getP();
+    auto accumulator = registers.getA();
+    value++;
+    u16 result = accumulator - value - flags.carry;
+    updateCarryFlag(result);
+    updateOverflowFlag(accumulator, result);
+    accumulator = result & 0xFF;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+
+    mmu->writeIntoMemory(targetAddress, value);
+    return 8;
+}
+
+/**
+ * LAS [Unofficial] - LDA/TSX oper (M AND SP -> A, X, SP)
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::las()
+{
+    static_assert("Unsupported addressing mode used in LAS instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::las<AddressingMode::AbsoluteIndexedY>()
+{
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getY();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+    
+    auto& sp = registers.getS();
+    auto& accumulator = registers.getA();
+    auto& x = registers.getX();
+
+    sp &= value;
+    x = sp;
+    accumulator = sp;
+
+    updateZeroFlag(sp);
+    updateNegativeFlag(sp);
+
+    return checkForPageCross(baseAddress, targetAddress) ? 5 : 4;
+}
+
+/**
+ * LAX [Unofficial] - LDA oper + LDX oper
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::lax()
+{
+    static_assert("Unsupported addressing mode used in LAX instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::lax<AddressingMode::Absolute>()
+{
+    auto address = fetchImmedate16();
+    auto value = mmu->readFromMemory(address);
+
+    auto& accumulator = registers.getA();
+    auto& x = registers.getX();
+    accumulator = value;
+    x = accumulator;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+
+    return 4;
+}
+
+template <>
+inline unsigned Cpu::lax<AddressingMode::AbsoluteIndexedY>()
+{
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getY();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+
+    auto& accumulator = registers.getA();
+    auto& x = registers.getX();
+    accumulator = value;
+    x = accumulator;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+
+    return checkForPageCross(baseAddress, targetAddress) ? 5 : 4;
+}
+
+template <>
+inline unsigned Cpu::lax<AddressingMode::ZeroPage>()
+{
+    auto address = fetchImmedate8();
+    auto value = mmu->readFromMemory(address);
+
+    auto& accumulator = registers.getA();
+    auto& x = registers.getX();
+    accumulator = value;
+    x = accumulator;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+
+    return 3;
+}
+
+template <>
+inline unsigned Cpu::lax<AddressingMode::ZeroPageIndexedY>()
+{
+    auto baseAddress = fetchImmedate8();
+    auto index = registers.getY();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+
+    auto& accumulator = registers.getA();
+    auto& x = registers.getX();
+    accumulator = value;
+    x = accumulator;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+
+    return 4;
+}
+
+template <>
+inline unsigned Cpu::lax<AddressingMode::IndirectX>()
+{
+    auto basePointerAddress = fetchImmedate8();
+    auto index = registers.getX();
+    auto targetPointerAddress = basePointerAddress + index;
+    auto address = mmu->readFromMemory(targetPointerAddress) |
+        mmu->readFromMemory(targetPointerAddress + 1) << 8;
+    auto value = mmu->readFromMemory(address);
+
+    auto& accumulator = registers.getA();
+    auto& x = registers.getX();
+    accumulator = value;
+    x = accumulator;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+
+    return 6;
+}
+
+template <>
+inline unsigned Cpu::lax<AddressingMode::IndirectY>()
+{
+    auto pointerAddress = fetchImmedate8();
+    auto index = registers.getY();
+    auto baseAddress = mmu->readFromMemory(pointerAddress) |
+        mmu->readFromMemory(pointerAddress + 1) << 8;
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+
+    auto& accumulator = registers.getA();
+    auto& x = registers.getX();
+    accumulator = value;
+    x = accumulator;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+
+    return checkForPageCross(baseAddress, targetAddress) ? 6 : 5;
+}
+
+/**
+ * LXA [Unofficial] - Store * AND oper in A and X
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::lxa()
+{
+    static_assert("Unsupported addressing mode used in LXA instruction");
+    return 0; 
+}
+
+template <>
+inline unsigned Cpu::lxa<AddressingMode::Immediate>()
+{
+    auto& accumulator = registers.getA();
+    auto& x = registers.getX();
+    auto operand = fetchImmedate8();
+    
+    accumulator = (accumulator | 0xFF) & operand;
+    x = accumulator;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+    
+    return 2;
+}
+
+/**
+ * RLA [Unofficial] - ROL oper + AND oper
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::rla()
+{
+    static_assert("Unsupported addressing mode used in RLA instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::rla<AddressingMode::Absolute>()
+{
+    auto address = fetchImmedate16();
+    auto value = mmu->readFromMemory(address);
+    
+    auto& flags = registers.getP();
+    auto oldCarry = flags.carry;
+    flags.carry = (value >> 7) & 0x1;
+    value = value << 1 | oldCarry;
+    auto& accumulator = registers.getA();
+    accumulator &= value;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+
+    mmu->writeIntoMemory(address, value);
+    return 6;
+}
+
+template <>
+inline unsigned Cpu::rla<AddressingMode::AbsoluteIndexedX>()
+{
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+
+    auto& flags = registers.getP();
+    auto oldCarry = flags.carry;
+    flags.carry = (value >> 7) & 0x1;
+    value = value << 1 | oldCarry;
+    auto& accumulator = registers.getA();
+    accumulator &= value;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+
+    mmu->writeIntoMemory(targetAddress, value);
+    return 7;
+}
+
+template <>
+inline unsigned Cpu::rla<AddressingMode::AbsoluteIndexedY>()
+{
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getY();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+
+    auto& flags = registers.getP();
+    auto oldCarry = flags.carry;
+    flags.carry = (value >> 7) & 0x1;
+    value = value << 1 | oldCarry;
+    auto& accumulator = registers.getA();
+    accumulator &= value;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+
+    mmu->writeIntoMemory(targetAddress, value);
+    return 7;
+}
+
+template <>
+inline unsigned Cpu::rla<AddressingMode::ZeroPage>()
+{
+    auto address = fetchImmedate8();
+    auto value = mmu->readFromMemory(address);
+    
+    auto& flags = registers.getP();
+    auto oldCarry = flags.carry;
+    flags.carry = (value >> 7) & 0x1;
+    value = value << 1 | oldCarry;
+    auto& accumulator = registers.getA();
+    accumulator &= value;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+
+    mmu->writeIntoMemory(address, value);
+    return 5;
+}
+
+template <>
+inline unsigned Cpu::rla<AddressingMode::ZeroPageIndexedX>()
+{
+    auto baseAddress = fetchImmedate8();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+
+    auto& flags = registers.getP();
+    auto oldCarry = flags.carry;
+    flags.carry = (value >> 7) & 0x1;
+    value = value << 1 | oldCarry;
+    auto& accumulator = registers.getA();
+    accumulator &= value;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+
+    mmu->writeIntoMemory(targetAddress, value);
+    return 6;
+}
+
+template <>
+inline unsigned Cpu::rla<AddressingMode::IndirectX>()
+{
+    auto basePointerAddress = fetchImmedate8();
+    auto index = registers.getX();
+    auto targetPointerAddress = basePointerAddress + index;
+    auto address = mmu->readFromMemory(targetPointerAddress) |
+        mmu->readFromMemory(targetPointerAddress + 1) << 8;
+    auto value = mmu->readFromMemory(address);
+
+    auto& flags = registers.getP();
+    auto oldCarry = flags.carry;
+    flags.carry = (value >> 7) & 0x1;
+    value = value << 1 | oldCarry;
+    auto& accumulator = registers.getA();
+    accumulator &= value;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+
+    mmu->writeIntoMemory(address, value);
+    return 8;
+}
+
+template <>
+inline unsigned Cpu::rla<AddressingMode::IndirectY>()
+{
+    auto pointerAddress = fetchImmedate8();
+    auto index = registers.getY();
+    auto baseAddress = mmu->readFromMemory(pointerAddress) |
+        mmu->readFromMemory(pointerAddress + 1) << 8;
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+
+    auto& flags = registers.getP();
+    auto oldCarry = flags.carry;
+    flags.carry = (value >> 7) & 0x1;
+    value = value << 1 | oldCarry;
+    auto& accumulator = registers.getA();
+    accumulator &= value;
+    updateZeroFlag(accumulator);
+    updateNegativeFlag(accumulator);
+
+    mmu->writeIntoMemory(targetAddress, value);
+    return 8;
+}
+
+/**
+ * RRA [Unofficial] - ROR oper + ADC oper
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::rra()
+{
+    static_assert("Unsupported addressing mode used in RRA instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::rra<AddressingMode::Absolute>()
+{
+    auto address = fetchImmedate16();
+    auto value = mmu->readFromMemory(address);
+
+    auto& flags = registers.getP();
+    auto& accumulator = registers.getA();
+    auto oldCarry = flags.carry;
+    flags.carry = value & 0x1;
+    value = value >> 1 | (oldCarry << 7);
+    u16 result = accumulator + value + flags.carry;
+    updateCarryFlag(result);
+    updateOverflowFlag(accumulator, result);
+    accumulator = result & 0xFF;
+    updateNegativeFlag(accumulator);
+    updateZeroFlag(accumulator);
+
+    mmu->writeIntoMemory(address, value);
+    return 6;
+}
+
+template <>
+inline unsigned Cpu::rra<AddressingMode::AbsoluteIndexedX>()
+{
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+
+    auto& flags = registers.getP();
+    auto& accumulator = registers.getA();
+    auto oldCarry = flags.carry;
+    flags.carry = value & 0x1;
+    value = value >> 1 | (oldCarry << 7);
+    u16 result = accumulator + value + flags.carry;
+    updateCarryFlag(result);
+    updateOverflowFlag(accumulator, result);
+    accumulator = result & 0xFF;
+    updateNegativeFlag(accumulator);
+    updateZeroFlag(accumulator);
+    
+    mmu->writeIntoMemory(targetAddress, value);
+    return 7;
+}
+
+template <>
+inline unsigned Cpu::rra<AddressingMode::AbsoluteIndexedY>()
+{
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getY();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+
+    auto& flags = registers.getP();
+    auto& accumulator = registers.getA();
+    auto oldCarry = flags.carry;
+    flags.carry = value & 0x1;
+    value = value >> 1 | (oldCarry << 7);
+    u16 result = accumulator + value + flags.carry;
+    updateCarryFlag(result);
+    updateOverflowFlag(accumulator, result);
+    accumulator = result & 0xFF;
+    updateNegativeFlag(accumulator);
+    updateZeroFlag(accumulator);
+    
+    mmu->writeIntoMemory(targetAddress, value);
+    return 7;
+}
+
+template <>
+inline unsigned Cpu::rra<AddressingMode::ZeroPage>()
+{
+    auto address = fetchImmedate8();
+    auto value = mmu->readFromMemory(address);
+
+    auto& flags = registers.getP();
+    auto& accumulator = registers.getA();
+    auto oldCarry = flags.carry;
+    flags.carry = value & 0x1;
+    value = value >> 1 | (oldCarry << 7);
+    u16 result = accumulator + value + flags.carry;
+    updateCarryFlag(result);
+    updateOverflowFlag(accumulator, result);
+    accumulator = result & 0xFF;
+    updateNegativeFlag(accumulator);
+    updateZeroFlag(accumulator);
+
+    mmu->writeIntoMemory(address, value);
+    return 5;
+}
+
+template <>
+inline unsigned Cpu::rra<AddressingMode::ZeroPageIndexedX>()
+{
+    auto baseAddress = fetchImmedate8();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+
+    auto& flags = registers.getP();
+    auto& accumulator = registers.getA();
+    auto oldCarry = flags.carry;
+    flags.carry = value & 0x1;
+    value = value >> 1 | (oldCarry << 7);
+    u16 result = accumulator + value + flags.carry;
+    updateCarryFlag(result);
+    updateOverflowFlag(accumulator, result);
+    accumulator = result & 0xFF;
+    updateNegativeFlag(accumulator);
+    updateZeroFlag(accumulator);
+    
+    mmu->writeIntoMemory(targetAddress, value);
+    return 6;
+}
+
+template <>
+inline unsigned Cpu::rra<AddressingMode::IndirectX>()
+{
+    auto basePointerAddress = fetchImmedate8();
+    auto index = registers.getX();
+    auto targetPointerAddress = basePointerAddress + index;
+    auto address = mmu->readFromMemory(targetPointerAddress) |
+        mmu->readFromMemory(targetPointerAddress + 1) << 8;
+    auto value = mmu->readFromMemory(address);
+
+    auto& flags = registers.getP();
+    auto& accumulator = registers.getA();
+    auto oldCarry = flags.carry;
+    flags.carry = value & 0x1;
+    value = value >> 1 | (oldCarry << 7);
+    u16 result = accumulator + value + flags.carry;
+    updateCarryFlag(result);
+    updateOverflowFlag(accumulator, result);
+    accumulator = result & 0xFF;
+    updateNegativeFlag(accumulator);
+    updateZeroFlag(accumulator);
+
+    mmu->writeIntoMemory(address, value);
+    return 8;
+}
+
+template <>
+inline unsigned Cpu::rra<AddressingMode::IndirectY>()
+{
+    auto pointerAddress = fetchImmedate8();
+    auto index = registers.getY();
+    auto baseAddress = mmu->readFromMemory(pointerAddress) |
+        mmu->readFromMemory(pointerAddress + 1) << 8;
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+
+    auto& flags = registers.getP();
+    auto& accumulator = registers.getA();
+    auto oldCarry = flags.carry;
+    flags.carry = value & 0x1;
+    value = value >> 1 | (oldCarry << 7);
+    u16 result = accumulator + value + flags.carry;
+    updateCarryFlag(result);
+    updateOverflowFlag(accumulator, result);
+    accumulator = result & 0xFF;
+    updateNegativeFlag(accumulator);
+    updateZeroFlag(accumulator);
+
+    mmu->writeIntoMemory(targetAddress, value);
+    return 8;
+}
+
+/**
+ * SAX [Unofficial] - A and X are put on the bus at the same time (resulting effectively in an AND operation) and stored in M. 
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::sax()
+{
+    static_assert("Unsupported addressing mode used in SAX instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::sax<AddressingMode::Absolute>()
+{
+    auto address = fetchImmedate16();
+    
+    auto accumulator = registers.getA();
+    auto x = registers.getX();
+    auto result = accumulator & x;
+
+    mmu->writeIntoMemory(address, result);
+    return 4;
+}
+
+template <>
+inline unsigned Cpu::sax<AddressingMode::ZeroPage>()
+{
+    auto address = fetchImmedate16();
+    
+    auto accumulator = registers.getA();
+    auto x = registers.getX();
+    auto result = accumulator & x;
+
+    mmu->writeIntoMemory(address, result);
+    return 3;
+}
+
+template <>
+inline unsigned Cpu::sax<AddressingMode::ZeroPageIndexedY>()
+{
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getY();
+    auto targetAddress = baseAddress + index;
+
+    auto accumulator = registers.getA();
+    auto x = registers.getX();
+    auto result = accumulator & x;
+
+    mmu->writeIntoMemory(targetAddress, result);
+    return 4;
+}
+
+template <>
+inline unsigned Cpu::sax<AddressingMode::IndirectX>()
+{
+    auto basePointerAddress = fetchImmedate8();
+    auto index = registers.getX();
+    auto targetPointerAddress = basePointerAddress + index;
+    auto address = mmu->readFromMemory(targetPointerAddress) | 
+        mmu->readFromMemory(targetPointerAddress + 1) << 8;
+
+    auto accumulator = registers.getA();
+    auto x = registers.getX();
+    auto result = accumulator & x;
+
+    mmu->writeIntoMemory(address, result);
+    return 6;
+}
+
+/**
+ * AXS [Unofficial] - CMP and DEX at once, sets flags like CMP
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::axs()
+{
+    static_assert("Unsupported addressing mode used in AXS instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::axs<AddressingMode::Immediate>()
+{
+    auto& x = registers.getX();
+    auto& flags = registers.getP();
+    auto accumulator = registers.getA();
+    auto operand = fetchImmedate8();
+
+    auto intermediate = accumulator & x;
+    flags.carry = operand > intermediate;
+    x = intermediate - operand;
+    updateZeroFlag(x);
+    updateNegativeFlag(x);
+
+    return 2;
+}
+
+/**
+ * AHX [Unofficial] - Stores A AND X AND (high-byte of addr. + 1) at addr.
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::ahx()
+{
+    static_assert("Unsupported addressing mode used in AHX instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::ahx<AddressingMode::AbsoluteIndexedY>()
+{
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getY();
+    auto targetAddress = baseAddress + index;
+
+    auto accumulator = registers.getA();
+    auto x = registers.getX();
+    auto result = accumulator & x & (((targetAddress >> 8) + 1) & 0xFF);
+
+    mmu->writeIntoMemory(targetAddress, result);
+    return 5;
+}
+
+template <>
+inline unsigned Cpu::ahx<AddressingMode::IndirectY>()
+{
+    auto pointerAddress = fetchImmedate8();
+    auto index = registers.getY();
+    auto baseAddress = mmu->readFromMemory(pointerAddress) |
+        mmu->readFromMemory(pointerAddress + 1) << 8;
+    auto targetAddress = baseAddress + index;
+
+    auto accumulator = registers.getA();
+    auto x = registers.getX();
+    auto result = accumulator & x & (((targetAddress >> 8) + 1) & 0xFF);
+
+    mmu->writeIntoMemory(targetAddress, result);
+    return 6;
+}
+
+/**
+ * SHX [Unofficial] - Stores X AND (high-byte of addr. + 1) at addr.
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::shx()
+{
+    static_assert("Unsupported addressing mode used in SHX instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::shx<AddressingMode::AbsoluteIndexedY>()
+{
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getY();
+    auto targetAddress = baseAddress + index;
+    auto x = registers.getX();
+
+    u8 result = x & (((targetAddress >> 8) & 0xFF) + 1);
+    mmu->writeIntoMemory(targetAddress, result);
+    return 5;
+}
+
+/**
+ * SHY [Unofficial] - Stores Y AND (high-byte of addr. + 1) at addr.
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::shy()
+{
+    static_assert("Unsupported addressing mode used in SHY instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::shy<AddressingMode::AbsoluteIndexedX>()
+{
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index;
+    auto y = registers.getY();
+    
+    u8 result = y & (((targetAddress >> 8) & 0xFF) + 1);
+    mmu->writeIntoMemory(targetAddress, result);
+    return 5;
+}
+
+/**
+ * SLO [Unofficial] - ASL oper + ORA oper 
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::slo()
+{
+    static_assert("Unsupported addressing mode used in SLO instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::slo<AddressingMode::Absolute>()
+{
+    auto address = fetchImmedate16();
+    auto value = mmu->readFromMemory(address);
+    auto& flags = registers.getP();
+    auto& accumulator = registers.getA();
+    flags.carry = (value >> 7) & 0x1;
+    value <<= 1;
+    accumulator = accumulator | value;
+    return 6;
+}
+
+template <>
+inline unsigned Cpu::slo<AddressingMode::AbsoluteIndexedX>()
+{
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+    auto& flags = registers.getP();
+    auto& accumulator = registers.getA();
+    flags.carry = (value >> 7) & 0x1;
+    value <<= 1;
+    accumulator = accumulator | value;
+    return 7;
+}
+
+template <>
+inline unsigned Cpu::slo<AddressingMode::AbsoluteIndexedY>()
+{
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getY();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+    auto& flags = registers.getP();
+    auto& accumulator = registers.getA();
+    flags.carry = (value >> 7) & 0x1;
+    value <<= 1;
+    accumulator = accumulator | value;
+    return 7;
+}
+
+template <>
+inline unsigned Cpu::slo<AddressingMode::ZeroPage>()
+{
+    auto address = fetchImmedate8();
+    auto value = mmu->readFromMemory(address);
+    auto& flags = registers.getP();
+    auto& accumulator = registers.getA();
+    flags.carry = (value >> 7) & 0x1;
+    value <<= 1;
+    accumulator = accumulator | value;
+    return 5;
+}
+
+template <>
+inline unsigned Cpu::slo<AddressingMode::ZeroPageIndexedX>()
+{
+    auto baseAddress = fetchImmedate8();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+    auto& flags = registers.getP();
+    auto& accumulator = registers.getA();
+    flags.carry = (value >> 7) & 0x1;
+    value <<= 1;
+    accumulator = accumulator | value;
+    return 6;
+}
+
+template <>
+inline unsigned Cpu::slo<AddressingMode::IndirectX>()
+{
+    auto basePointerAddress = fetchImmedate8();
+    auto index = registers.getX();
+    auto targetPointerAddress = basePointerAddress + index;
+    auto address = mmu->readFromMemory(targetPointerAddress) |
+        mmu->readFromMemory(targetPointerAddress + 1) << 8;
+    auto value = mmu->readFromMemory(address);
+    auto& flags = registers.getP();
+    auto& accumulator = registers.getA();
+    flags.carry = (value >> 7) & 0x1;
+    value <<= 1;
+    accumulator = accumulator | value;
+    return 8;
+}
+
+template <>
+inline unsigned Cpu::slo<AddressingMode::IndirectY>()
+{
+    auto pointerAddress = fetchImmedate8();
+    auto index = registers.getY();
+    auto baseAddress = mmu->readFromMemory(pointerAddress) |
+        mmu->readFromMemory(pointerAddress + 1) << 8;
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+    auto& flags = registers.getP();
+    auto& accumulator = registers.getA();
+    flags.carry = (value >> 7) & 0x1;
+    value <<= 1;
+    accumulator = accumulator | value;
+    return 8;
+}
+
+/**
+ * SRE [Unofficial] - LSR oper + EOR oper
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::sre()
+{
+    static_assert("Unsupported addressing mode used in SRE instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::sre<AddressingMode::Absolute>()
+{
+    auto address = fetchImmedate16();
+    auto value = mmu->readFromMemory(address);
+    auto& flags = registers.getP();
+    auto& accumulator = registers.getA();
+    flags.carry = value & 0x1;
+    value >>= 1;
+    accumulator = accumulator ^ value;
+    return 6;
+}
+
+template <>
+inline unsigned Cpu::sre<AddressingMode::AbsoluteIndexedX>()
+{
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+    auto& flags = registers.getP();
+    auto& accumulator = registers.getA();
+    flags.carry = value & 0x1;
+    value >>= 1;
+    accumulator = accumulator ^ value;
+    return 7;
+}
+
+template <>
+inline unsigned Cpu::sre<AddressingMode::AbsoluteIndexedY>()
+{
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getY();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+    auto& flags = registers.getP();
+    auto& accumulator = registers.getA();
+    flags.carry = value & 0x1;
+    value >>= 1;
+    accumulator = accumulator ^ value;
+    return 7;
+}
+
+template <>
+inline unsigned Cpu::sre<AddressingMode::ZeroPage>()
+{
+    auto address = fetchImmedate8();
+    auto value = mmu->readFromMemory(address);
+    auto& flags = registers.getP();
+    auto& accumulator = registers.getA();
+    flags.carry = value & 0x1;
+    value >>= 1;
+    accumulator = accumulator ^ value;
+    return 5;
+}
+
+template <>
+inline unsigned Cpu::sre<AddressingMode::ZeroPageIndexedX>()
+{
+    auto baseAddress = fetchImmedate8();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+    auto& flags = registers.getP();
+    auto& accumulator = registers.getA();
+    flags.carry = value & 0x1;
+    value >>= 1;
+    accumulator = accumulator ^ value;
+    return 6;
+}
+
+template <>
+inline unsigned Cpu::sre<AddressingMode::IndirectX>()
+{
+    auto& accumulator = registers.getA();
+    auto& flags = registers.getP();
+    auto basePointerAddress = fetchImmedate8();
+    auto index = registers.getX();
+    u16 targetPointerAddress = basePointerAddress + index;
+    u16 address = mmu->readFromMemory(targetPointerAddress & 0xFF)
+        | mmu->readFromMemory((targetPointerAddress + 1) & 0xFF) << 8;
+    auto value = mmu->readFromMemory(address);
+    flags.carry = value & 0x1;
+    value >>= 1;
+    accumulator = accumulator ^ value;
+    return 8;
+}
+
+template <>
+inline unsigned Cpu::sre<AddressingMode::IndirectY>()
+{
+    auto& accumulator = registers.getA();
+    auto& flags = registers.getP();
+    auto index = registers.getY();
+    auto pointerAddress = fetchImmedate8();
+    u16 baseAddress = mmu->readFromMemory(pointerAddress & 0xFF)
+        | mmu->readFromMemory((pointerAddress + 1) & 0xFF) << 8;
+    auto targetAddress = baseAddress + index;
+    auto value = mmu->readFromMemory(targetAddress);
+    flags.carry = value & 0x1;
+    value >>= 1;
+    accumulator = accumulator ^ value;
+    return 8;
+}
+
+/**
+ * TAS [Unofficial] - Puts A AND X in SP and stores A AND X AND (high-byte of addr. + 1) at addr.
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::tas()
+{
+    static_assert("Unsupported addressing mode used in TAS instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::tas<AddressingMode::AbsoluteIndexedY>()
+{
+    auto& sp = registers.getS();
+    auto accumulator = registers.getA();
+    auto x = registers.getX();
+    sp = accumulator & x;
+
+    auto address = fetchImmedate16();
+    auto y = registers.getY();
+    auto value = accumulator & x & ((address >> 8) + 1);
+    mmu->writeIntoMemory(address, value);
+    return 5;
+}
+
+/**
+ * USBC [Unofficial] - Combination of SBC and NOP 
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::usbc()
+{
+    static_assert("Unsupported addressing mode used in USBC instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::usbc<AddressingMode::Immediate>()
+{
+    return sbc<AddressingMode::Immediate>();
+}
+
+/**
+ * NOP [Unofficial] - Unofficial variants of NOP
+ */
+template <>
+inline unsigned Cpu::nop<AddressingMode::Immediate>()
+{
+    fetchImmedate8();
+    return 2;
+}
+
+template <>
+inline unsigned Cpu::nop<AddressingMode::ZeroPage>()
+{
+    fetchImmedate8();
+    return 3;
+}
+
+template <>
+inline unsigned Cpu::nop<AddressingMode::ZeroPageIndexedX>()
+{
+    fetchImmedate8();
+    return 4;
+}
+
+template <>
+inline unsigned Cpu::nop<AddressingMode::Absolute>()
+{
+    fetchImmedate16();
+    return 4;
+}
+
+template <>
+inline unsigned Cpu::nop<AddressingMode::AbsoluteIndexedX>()
+{
+    auto baseAddress = fetchImmedate16();
+    auto index = registers.getX();
+    auto targetAddress = baseAddress + index;
+    return checkForPageCross(baseAddress, targetAddress) ? 5 : 4;
+}
+
+/**
+ * STP [Unofficial] - Freeze the CPU 
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::stp()
+{
+    static_assert("Unsupported addressing mode used in STP instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::stp<AddressingMode::Implied>()
+{
+    halted = true;
+    return 0;
 }
