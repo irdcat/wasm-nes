@@ -121,6 +121,10 @@ class Cpu
         template <AddressingMode Mode> unsigned cpx();          // CPX - Compare with X
         template <AddressingMode Mode> unsigned cpy();          // CPY - Compare with Y
 
+        // Interrupt instructions
+        template <AddressingMode Mode> unsigned brk();          // BRK - Break
+        template <AddressingMode Mode> unsigned rti();          // RTI - Return from Interrupt
+
         // Other instructions
         template <AddressingMode Mode> unsigned nop();          // NOP - No operation
         template <AddressingMode Mode> unsigned bit();          // BIT - Test bit
