@@ -16,6 +16,25 @@ Cpu::Cpu(const std::shared_ptr<Mmu> &mmu)
     sp = 0xFD;
 }
 
+void Cpu::step()
+{
+    if(nmiPending) {
+        handleInterrupt(InterruptType::NMI);
+        nmiPending = false;
+        irqPending = false;
+        return;
+    }
+    if(irqPending) {
+        handleInterrupt(InterruptType::IRQ);
+        nmiPending = false;
+        irqPending = false;
+        return;
+    }
+
+    auto opcode = fetchOpcode();
+    executeInstruction(opcode);
+}
+
 u8 Cpu::fetchOpcode()
 {
     return fetchImmedate8();
@@ -289,9 +308,55 @@ unsigned Cpu::executeInstruction(u8 opcode)
     return 0;
 }
 
+void Cpu::interrupt(InterruptType type)
+{
+    switch(type) {
+        case InterruptType::IRQ:
+            irqPending = true;
+            break;
+        case InterruptType::NMI:
+            nmiPending = true;
+            break;
+        default:
+            break;
+    }
+}
+
 CpuRegisters &Cpu::getRegisters()
 {
     return registers;
+}
+
+unsigned Cpu::handleInterrupt(InterruptType type)
+{
+    auto& flags = registers.getP();
+    auto& pc = registers.getPc();
+    
+    if(flags.interruptDisable && type == InterruptType::IRQ) {
+        return;
+    }
+
+    if(type == InterruptType::BRK) {
+        pc++;
+        flags.breakFlag = type == InterruptType::BRK;
+    }
+
+    pushIntoStack16(pc);
+    pushIntoStack8(flags.raw);
+
+    flags.interruptDisable = true;
+
+    switch(type) {
+        case InterruptType::BRK:
+        case InterruptType::IRQ:
+            pc = 0xFFFE;
+            break;
+        case InterruptType::NMI:
+            pc = 0xFFFA;
+            break;
+    }
+
+    return 6;
 }
 
 u8 Cpu::fetchImmedate8()
