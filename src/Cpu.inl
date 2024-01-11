@@ -2513,6 +2513,43 @@ inline unsigned Cpu::cpy<AddressingMode::ZeroPage>()
 }
 
 /**
+ * BRK - Break
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::brk()
+{
+    static_assert("Unsupported addressing mode used in BRK instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::brk<AddressingMode::Implied>()
+{
+    return handleInterrupt(InterruptType::BRK);
+}
+
+/**
+ * RTI - Return from Interrupt 
+ */
+template <AddressingMode Mode>
+inline unsigned Cpu::rti()
+{
+    static_assert("Unsupported addressing mode used in RTI instruction");
+    return 0;
+}
+
+template <>
+inline unsigned Cpu::rti<AddressingMode::Implied>()
+{
+    auto& flags = registers.getP();
+    auto& pc = registers.getPc();
+    auto flagsFromStack = popFromStack8();
+    flags.raw = flagsFromStack & ~(3 << 4);
+    pc = popFromStack16();
+    return 6;
+}
+
+/**
  * NOP - No operation 
  */
 template <AddressingMode Mode>

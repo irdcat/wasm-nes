@@ -47,7 +47,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
     }
 
     switch(opcode) {
-        case 0x00: break; // BRK implied
+        case 0x00: return brk<AddressingMode::Implied>();           // BRK implied
         case 0x01: return ora<AddressingMode::IndirectX>();         // ORA indirect X
         case 0x02: return stp<AddressingMode::Implied>();           // STP [Unofficial]
         case 0x03: return slo<AddressingMode::IndirectX>();         // SLO indirect X [Unofficial]
@@ -111,7 +111,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0x3D: return _and<AddressingMode::AbsoluteIndexedX>(); // AND absolute indexed X
         case 0x3E: return rol<AddressingMode::AbsoluteIndexedX>();  // ROL absolute indexed X
         case 0x3F: return rla<AddressingMode::AbsoluteIndexedX>();  // RLA absolute indexed X [Unofficial]
-        case 0x40: break; // RTI implied
+        case 0x40: return rti<AddressingMode::Implied>();           // RTI implied
         case 0x41: return eor<AddressingMode::IndirectX>();         // EOR indirect X
         case 0x42: return stp<AddressingMode::Implied>();           // STP [Unofficial]
         case 0x43: return sre<AddressingMode::IndirectX>();         // SRE indirect X [Unofficial]
@@ -333,7 +333,7 @@ unsigned Cpu::handleInterrupt(InterruptType type)
     auto& pc = registers.getPc();
     
     if(flags.interruptDisable && type == InterruptType::IRQ) {
-        return;
+        return 0;
     }
 
     if(type == InterruptType::BRK) {
@@ -356,7 +356,7 @@ unsigned Cpu::handleInterrupt(InterruptType type)
             break;
     }
 
-    return 6;
+    return 7;
 }
 
 u8 Cpu::fetchImmedate8()
