@@ -5,6 +5,7 @@
 #include "Mmu.hpp"
 #include "CpuRegisters.hpp"
 #include "AddressingMode.hpp"
+#include "InterruptType.hpp"
 
 class Cpu
 {
@@ -13,9 +14,13 @@ class Cpu
 
         ~Cpu() = default;
 
+        void step();
+
         u8 fetchOpcode();
 
         unsigned executeInstruction(u8 opcode);
+
+        void interrupt(InterruptType type);
 
         CpuRegisters& getRegisters();
 
@@ -23,6 +28,10 @@ class Cpu
         std::shared_ptr<Mmu> mmu;
         CpuRegisters registers;
         bool halted;
+        bool irqPending;
+        bool nmiPending;
+
+        unsigned handleInterrupt(InterruptType type);
 
         u8 fetchImmedate8();
         u16 fetchImmedate16();
