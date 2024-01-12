@@ -44,8 +44,9 @@ class Cpu
 
         void updateZeroFlag(auto value);
         void updateNegativeFlag(auto value);
-        void updateOverflowFlag(auto valueBefore, auto valueAfter);
-        void updateCarryFlag(auto value);
+        void updateOverflowFlagAdc(auto operand1, auto operand2, auto result);
+        void updateOverflowFlagSbc(auto operand1, auto operand2, auto result);
+        void updateCarryFlag(auto value, bool negate = false);
 
         bool checkForPageCross(u16 oldAddress, u16 newAddress);
 

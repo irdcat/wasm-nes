@@ -14,6 +14,9 @@ Cpu::Cpu(const std::shared_ptr<Mmu> &mmu)
     y = 0;
     p.raw = 0x24;
     sp = 0xFD;
+    halted = false;
+    nmiPending = false;
+    irqPending = false;
 }
 
 void Cpu::step()
@@ -232,7 +235,7 @@ unsigned Cpu::executeInstruction(u8 opcode)
         case 0xB6: return ldx<AddressingMode::ZeroPageIndexedY>();  // LDX zero-page indexed Y
         case 0xB7: return lax<AddressingMode::ZeroPageIndexedY>();  // LAX zero-page indexed Y [Unofficial]
         case 0xB8: return clv<AddressingMode::Implied>();           // CLV implied
-        case 0xB9: return lda<AddressingMode::ZeroPageIndexedY>();  // LDA absolute indexed Y
+        case 0xB9: return lda<AddressingMode::AbsoluteIndexedY>();  // LDA absolute indexed Y
         case 0xBA: return tsx<AddressingMode::Implied>();           // TSX implied
         case 0xBB: return las<AddressingMode::AbsoluteIndexedY>();  // LAS absolute indexed Y [Unofficial]
         case 0xBC: return ldy<AddressingMode::AbsoluteIndexedX>();  // LDY absolute indexed X
@@ -385,15 +388,15 @@ void Cpu::pushIntoStack8(u8 value)
 
 u16 Cpu::popFromStack16()
 {
-    u8 high = popFromStack8();
     u8 low = popFromStack8();
+    u8 high = popFromStack8();
     return high << 8 | low;
 }
 
 void Cpu::pushIntoStack16(u16 value)
 {
-    pushIntoStack8(value & 0xFF);
     pushIntoStack8(value >> 8);
+    pushIntoStack8(value & 0xFF);
 }
 
 void Cpu::updateZeroFlag(auto value)
@@ -408,16 +411,24 @@ void Cpu::updateNegativeFlag(auto value)
     flags.negative = (value >> 7) & 0x1;
 }
 
-void Cpu::updateOverflowFlag(auto valueBefore, auto valueAfter)
+void Cpu::updateOverflowFlagAdc(auto operand1, auto operand2, auto result)
 {
     auto& flags = registers.getP();
-    flags.overflow = valueBefore <= 0x7F && valueAfter > 0x7F;
+    flags.overflow = ((operand1 ^ result) & (operand2 ^ result) & 0x80) > 0;
 }
 
-void Cpu::updateCarryFlag(auto value)
+void Cpu::updateOverflowFlagSbc(auto operand1, auto operand2, auto result)
+{
+    auto& flags = registers.getP();
+    flags.overflow = ((operand1 ^ result) & (~operand2 ^ result) & 0x80) > 0;
+}
+
+void Cpu::updateCarryFlag(auto value, bool negate)
 {
     auto& flags = registers.getP();
     flags.carry = (value >> 8) & 0x1;
+    if(negate)
+        flags.carry = ~flags.carry;
 }
 
 bool Cpu::checkForPageCross(u16 oldAddress, u16 newAddress)
