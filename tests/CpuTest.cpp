@@ -36,7 +36,7 @@ struct NesTestLogData
     u8 registerY;           // Value of register Y
     u8 registerP;           // Value of Processor Status
     u8 stackPointer;        // Value of Stack pointer
-    u8 cycleCounter;        // Amount of cycles performed
+    unsigned cycleCounter;  // Amount of cycles performed
     std::string line;
     std::string prevLine;
     unsigned lineNumber;
@@ -160,7 +160,8 @@ int main()
     auto printAssertionError = [](auto valueName, auto expected, auto actual, auto line, auto previousLine, auto lineNumber, bool useHex) {
         std::cout << "Actual " << valueName << " does not match the expected one" << std::endl
                     << (useHex ? std::hex : std::dec) 
-                    << "Expected: " << (unsigned)expected << " Actual: " << (unsigned)actual << std::endl
+                    << "Expected: " << std::uppercase << (unsigned)expected 
+                    << " Actual: " << std::uppercase << (unsigned)actual << std::endl
                     << "Log lines: " << std::endl;
         
         if(lineNumber != 1)
@@ -224,5 +225,6 @@ int main()
         cycleCounter += cpu->executeInstruction(opcode);
     }
 
+    std::cout << "SUCCESS!" << std::endl;
     return 0;
 }
