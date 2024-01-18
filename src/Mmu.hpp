@@ -1,12 +1,16 @@
 #pragma once
 
 #include "Types.hpp"
+#include "Ppu.hpp"
+#include <memory>
 #include <array>
 
 class Mmu
 {
     public:
         Mmu() = default;
+
+        Mmu(const std::shared_ptr<Ppu>& ppu);
 
         virtual ~Mmu() = default;
 
@@ -15,5 +19,7 @@ class Mmu
         virtual void writeIntoMemory(u16 addr, u8 value);
 
     private:
+        std::shared_ptr<Ppu> ppu;
+
         std::array<u8, 0x800> internalRam;
 };

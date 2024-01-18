@@ -4,7 +4,8 @@ project(wasm-nes)
 if(EMSCRIPTEN)
     set(APP_SOURCES
         src/Cpu.cpp
-        src/Mmu.cpp)
+        src/Mmu.cpp
+        src/Ppu.cpp)
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
     set(CXX_STANDARD 20)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -sWASM=1 -sALLOW_MEMORY_GROWTH=1")
@@ -15,7 +16,8 @@ endif()
 if(NOT EMSCRIPTEN)
     set(APP_LIB_SOURCES
         src/Cpu.cpp
-        src/Mmu.cpp)
+        src/Mmu.cpp
+        src/Ppu.cpp)
     set(TEST_SOURCES
         tests/CpuTest.cpp)
     set(CXX_STANDARD 20)
