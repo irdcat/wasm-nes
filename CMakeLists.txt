@@ -3,7 +3,7 @@ project(wasm-nes)
 
 if(EMSCRIPTEN)
     set(APP_SOURCES
-        src/Cpu.cpp,
+        src/Cpu.cpp
         src/Mmu.cpp)
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
     set(CXX_STANDARD 20)
