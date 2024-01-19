@@ -45,3 +45,8 @@ void Ppu::write(u8 index, u8 data)
         ppuData = data;
     }
 }
+
+void Ppu::tick()
+{
+    // TODO: PPU clock cycle
+}

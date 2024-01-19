@@ -13,6 +13,8 @@ class Ppu
 
         void write(u8 index, u8 data);
 
+        void tick();
+
     private:
         PpuRegisters ppuRegisters;
 };

@@ -22,4 +22,6 @@ class Mmu
         std::shared_ptr<Ppu> ppu;
 
         std::array<u8, 0x800> internalRam;
+
+        void tick();
 };

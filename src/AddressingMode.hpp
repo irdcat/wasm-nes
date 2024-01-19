@@ -100,3 +100,37 @@ enum class AddressingMode
      */
     ZeroPageIndexedY
 };
+
+constexpr bool isIndexed(AddressingMode mode) 
+{
+    return mode == AddressingMode::AbsoluteIndexedX
+        || mode == AddressingMode::AbsoluteIndexedY
+        || mode == AddressingMode::ZeroPageIndexedX
+        || mode == AddressingMode::ZeroPageIndexedY;
+}
+
+constexpr bool isAbsolute(AddressingMode mode) 
+{
+    return mode == AddressingMode::Absolute
+        || mode == AddressingMode::AbsoluteIndexedX
+        || mode == AddressingMode::AbsoluteIndexedY;
+}
+
+constexpr bool isZeroPage(AddressingMode mode) 
+{
+    return mode == AddressingMode::ZeroPage
+        || mode == AddressingMode::ZeroPageIndexedX
+        || mode == AddressingMode::ZeroPageIndexedY;
+}
+
+constexpr bool isIndexedIndirect(AddressingMode mode) 
+{
+    // Indirect X is "Indexed indirect", because direct address pointing to indirect address (pointer) is being indexed
+    return mode == AddressingMode::IndirectX; 
+}
+
+constexpr bool isIndirectIndexed(AddressingMode mode)
+{
+    // Indirect Y is "Indirect Indexed", because indirect address is being indexed
+    return mode == AddressingMode::IndirectY;
+}

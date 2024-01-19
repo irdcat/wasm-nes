@@ -7,6 +7,7 @@ Mmu::Mmu(const std::shared_ptr<Ppu> &ppu)
 
 u8 Mmu::readFromMemory(u16 addr)
 {
+    tick();
     if(addr < 0x2000) {
         // Internal RAM mirrored up to address 1FFF every 2KB.
         return internalRam[addr & 0xFFF];
@@ -20,6 +21,7 @@ u8 Mmu::readFromMemory(u16 addr)
 
 void Mmu::writeIntoMemory(u16 addr, u8 value)
 {
+    tick();
     if(addr < 0x2000) {
         // Internal RAM mirrored up to address 1FFF every 2KB.
         internalRam[addr % 0x800] = value;
@@ -27,4 +29,12 @@ void Mmu::writeIntoMemory(u16 addr, u8 value)
         // PPU Registers mirrored up to address 0x3FFF every 8B
         ppu->write((addr - 0x2000) & 0x7, value);
     }
+}
+
+void Mmu::tick()
+{
+    for(auto i = 0; i < 3; i++) {
+        ppu->tick();
+    }
+    // TODO: APU cycle triggering
 }
