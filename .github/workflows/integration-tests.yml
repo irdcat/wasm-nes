@@ -13,10 +13,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Build tests
-        run: |
-          set -e
-          ./build-tests.sh
+        run: ./build-tests.sh
       - name: Run tests
-        run: |
-          set -e
-          ./run-tests.sh
+        run: ./run-tests.sh
