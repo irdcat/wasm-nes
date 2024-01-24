@@ -17,14 +17,37 @@ class TestMmu
 
         ~TestMmu() = default;
 
-        u8 readFromMemory(u16 addr) override { return memory[addr]; };
+        u8 readFromMemory(u16 addr) override 
+        {
+            cycles++;
+            return memory[addr]; 
+        };
 
-        void writeIntoMemory(u16 addr, u8 value) override { memory[addr] = value; };
+        void writeIntoMemory(u16 addr, u8 value) override 
+        {
+            cycles++; 
+            memory[addr] = value; 
+        };
 
-        void clearMemory() { for(auto& byte : memory) byte = 0; }
+        void clearMemory() 
+        {
+            for(auto& byte : memory) 
+                byte = 0; 
+        };
+
+        unsigned getCycles()
+        {
+            return cycles;
+        }
+
+        void resetCycleCounter(unsigned initial)
+        {
+            cycles = initial;
+        }
 
     private:
         std::array<u8, 0xFFFF> memory;
+        unsigned cycles;
 };
 
 struct NesTestLogData
@@ -158,7 +181,7 @@ int main()
     pc = NES_TEST_START_ADDR;
 
     auto printAssertionError = [](auto valueName, auto expected, auto actual, auto line, auto previousLine, auto lineNumber, bool useHex) {
-        std::cout << "Actual " << valueName << " does not match the expected one" << std::endl
+        std::cout << "Actual " << valueName << " does not match the expectation" << std::endl
                     << (useHex ? std::hex : std::dec) 
                     << "Expected: " << std::uppercase << (unsigned)expected 
                     << " Actual: " << std::uppercase << (unsigned)actual << std::endl
@@ -172,7 +195,7 @@ int main()
         std::cout << std::dec << lineNumber << "\t" << line << std::endl;
     };
 
-    unsigned cycleCounter = 7;
+    testMmu->resetCycleCounter(6);
     while(nesTestLogParser.canParseNextLine())
     {
         auto expected = nesTestLogParser.parseNextLine();
@@ -216,13 +239,13 @@ int main()
             printAssertionError("opcode", expected.opcode, opcode, expected.line, expected.prevLine, expected.lineNumber, true);
             return 1;
         }
-        if(cycleCounter != expected.cycleCounter)
+        if(testMmu->getCycles() != expected.cycleCounter)
         {
-            printAssertionError("cycle count", expected.cycleCounter, cycleCounter, expected.line, expected.prevLine, expected.lineNumber, false);
+            printAssertionError("cycle count", expected.cycleCounter, testMmu->getCycles(), expected.line, expected.prevLine, expected.lineNumber, false);
             return 1;
         }
 
-        cycleCounter += cpu->executeInstruction(opcode);
+        cpu->executeInstruction(opcode);
     }
 
     std::cout << "SUCCESS!" << std::endl;
