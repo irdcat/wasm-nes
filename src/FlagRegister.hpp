@@ -1,21 +1,17 @@
 #pragma once
 
-#include "Types.hpp"
+#include "RegisterBit.hpp"
 
 union FlagRegister
 {
     u8 raw;
-    struct
-    {
-        u8 carry : 1;
-        u8 zero : 1;
-        u8 interruptDisable : 1;
-        u8 decimal : 1;
-        u8 breakFlag : 1;
-        u8 : 1;
-        u8 overflow : 1;
-        u8 negative : 1;
-    };
+    RegisterBit<0> carry;
+    RegisterBit<1> zero;
+    RegisterBit<2> interruptDisable;
+    RegisterBit<3> decimal;
+    RegisterBit<4> breakFlag;
+    RegisterBit<6> overflow;
+    RegisterBit<7> negative;
 
     operator u8&() { return raw; }
 

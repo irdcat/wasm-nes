@@ -1,21 +1,18 @@
 #pragma once
 
-#include "Types.hpp"
+#include "RegisterBit.hpp"
 
 union PpuMaskRegister
 {
     u8 raw;
-    struct
-    {
-        u8 greyscale : 1;
-        u8 showBg8 : 1;
-        u8 showSp8 : 1;
-        u8 showBg : 1;
-        u8 showSp : 1;
-        u8 emphasizeRed : 1;
-        u8 emphasizeGreen : 1;
-        u8 emphasizeBlue : 1;
-    };
+    RegisterBit<0> greyscale;
+    RegisterBit<1> showBg8;
+    RegisterBit<2> showSp8;
+    RegisterBit<3> showBg;
+    RegisterBit<4> showSp;
+    RegisterBit<5> emphasizeRed;
+    RegisterBit<6> emphasizeGreen;
+    RegisterBit<7> emphasizeBlue;
 
     operator u8&() { return raw; }
 

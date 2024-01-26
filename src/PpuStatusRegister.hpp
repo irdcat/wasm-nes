@@ -1,17 +1,13 @@
 #pragma once
 
-#include "Types.hpp"
+#include "RegisterBit.hpp"
 
 union PpuStatusRegister
 {
     u8 raw;
-    struct 
-    {
-        u8 : 5;
-        u8 spriteOverflow : 1;
-        u8 spriteZeroHit : 1;
-        u8 vblankStarted : 1;
-    };
+    RegisterBit<5> spriteOverflow;
+    RegisterBit<6> spriteZeroHit;
+    RegisterBit<7> inVBlank;
 
     operator u8&() { return raw; }
 
