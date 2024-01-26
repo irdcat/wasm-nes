@@ -16,5 +16,12 @@ class Ppu
         void tick();
 
     private:
-        PpuRegisters ppuRegisters;
+        PpuRegisters registers;
+        unsigned openBusDecayTimer;
+        u8 openBusContents;
+
+        template <bool IsWrite>
+        u8 access(u8 index, u8 data = 0);
 };
+
+#include "Ppu.inl"
