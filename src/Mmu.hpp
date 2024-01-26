@@ -18,9 +18,12 @@ class Mmu
 
         virtual void writeIntoMemory(u16 addr, u8 value);
 
+        void signalReset(bool signal);
+
     private:
         std::shared_ptr<Ppu> ppu;
         std::array<u8, 0x800> internalRam;
+        bool resetSignalled;
 
         void tick();
 

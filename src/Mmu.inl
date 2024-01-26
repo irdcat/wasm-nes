@@ -1,9 +1,11 @@
 template <bool IsWrite>
 inline u8 Mmu::memoryAccess(u16 addr, u8 value)
 {
-    // TODO: Turn writes into reads during reset
-    tick();
+    if(IsWrite && resetSignalled) {
+        return memoryAccess<0>(addr, value);
+    }
 
+    tick();
     if(addr < 0x2000) {
         u8& ramByte = internalRam[addr & 0xFFF];
         if constexpr(!IsWrite) {

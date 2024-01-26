@@ -12,11 +12,12 @@ Cpu::Cpu(const std::shared_ptr<Mmu> &mmu)
     a = 0;
     x = 0;
     y = 0;
-    p.raw = 0x24;
-    sp = 0xFD;
+    p = 0x20;
+    sp = 0;
     halted = false;
     nmiPending = false;
     irqPending = false;
+    reset();
 }
 
 void Cpu::step()
@@ -36,6 +37,13 @@ void Cpu::step()
 
     auto opcode = fetchOpcode();
     executeInstruction(opcode);
+}
+
+void Cpu::reset()
+{
+    mmu->signalReset(true);
+    handleInterrupt(InterruptType::RESET);
+    mmu->signalReset(false);
 }
 
 u8 Cpu::fetchOpcode()
@@ -337,7 +345,7 @@ void Cpu::handleInterrupt(InterruptType type)
         return;
     }
 
-    if(type == InterruptType::BRK) {
+    if(type == InterruptType::BRK || type == InterruptType::RESET) {
         fetchImmedate8();
         flags.breakFlag = type == InterruptType::BRK;
     }
@@ -350,10 +358,13 @@ void Cpu::handleInterrupt(InterruptType type)
     switch(type) {
         case InterruptType::BRK:
         case InterruptType::IRQ:
-            pc = mmu->readFromMemory(0xFFFE) | mmu->readFromMemory(0xFFFF) << 8;
+            pc = mmu->readFromMemory(0xFFFE) | (mmu->readFromMemory(0xFFFF) << 8);
+            break;
+        case InterruptType::RESET:
+            pc = mmu->readFromMemory(0xFFFC) | (mmu->readFromMemory(0xFFFD) << 8);
             break;
         case InterruptType::NMI:
-            pc = mmu->readFromMemory(0xFFFA) | mmu->readFromMemory(0xFFFB) << 8;
+            pc = mmu->readFromMemory(0xFFFA) | (mmu->readFromMemory(0xFFFB) << 8);
             break;
     }
 }

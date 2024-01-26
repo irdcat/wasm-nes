@@ -17,6 +17,8 @@ class Cpu
 
         void step();
 
+        void reset();
+
         u8 fetchOpcode();
 
         void executeInstruction(u8 opcode);

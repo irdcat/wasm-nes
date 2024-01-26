@@ -4,5 +4,6 @@ enum class InterruptType
 {
     BRK,
     IRQ,
-    NMI
+    NMI,
+    RESET
 };

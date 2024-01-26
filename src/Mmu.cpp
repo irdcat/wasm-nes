@@ -15,6 +15,11 @@ void Mmu::writeIntoMemory(u16 addr, u8 value)
     memoryAccess<1>(addr, value);
 }
 
+void Mmu::signalReset(bool signal)
+{
+    resetSignalled = signal;
+}
+
 void Mmu::tick()
 {
     for(auto i = 0; i < 3; i++) {

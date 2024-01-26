@@ -145,7 +145,6 @@ class NesTestLogParser
 int main()
 {
     std::shared_ptr<TestMmu> testMmu = std::make_shared<TestMmu>();
-    std::unique_ptr<Cpu> cpu = std::make_unique<Cpu>(testMmu);
     auto nesTestLogParser = NesTestLogParser(std::ifstream("nestest.log"));
 
     constexpr const unsigned NES_TEST_START_ADDR = 0xC000;
@@ -177,8 +176,7 @@ int main()
 
     testMmu->clearMemory();
     loadRomIntoMemory("nestest.nes", NES_TEST_START_ADDR);
-    auto& pc = cpu->getRegisters().getPc();
-    pc = NES_TEST_START_ADDR;
+    testMmu->resetCycleCounter(0);
 
     auto printAssertionError = [](auto valueName, auto expected, auto actual, auto line, auto previousLine, auto lineNumber, bool useHex) {
         std::cout << "Actual " << valueName << " does not match the expectation" << std::endl
@@ -195,7 +193,10 @@ int main()
         std::cout << std::dec << lineNumber << "\t" << line << std::endl;
     };
 
-    testMmu->resetCycleCounter(6);
+    std::unique_ptr<Cpu> cpu = std::make_unique<Cpu>(testMmu);
+    auto& pc = cpu->getRegisters().getPc();
+    pc = NES_TEST_START_ADDR;
+
     while(nesTestLogParser.canParseNextLine())
     {
         auto expected = nesTestLogParser.parseNextLine();
