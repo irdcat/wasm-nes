@@ -106,7 +106,9 @@ constexpr bool isIndexed(AddressingMode mode)
     return mode == AddressingMode::AbsoluteIndexedX
         || mode == AddressingMode::AbsoluteIndexedY
         || mode == AddressingMode::ZeroPageIndexedX
-        || mode == AddressingMode::ZeroPageIndexedY;
+        || mode == AddressingMode::ZeroPageIndexedY
+        || mode == AddressingMode::IndirectX
+        || mode == AddressingMode::IndirectY;
 }
 
 constexpr bool isAbsolute(AddressingMode mode) 

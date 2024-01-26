@@ -8,79 +8,49 @@ inline u8 Cpu::resolveReadOperand()
         || isIndexedIndirect(Mode) || isIndirectIndexed(Mode);
     static_assert(isSupportedMode, "Unsupported addressing mode used for resolving Read Instruction operand");
 
-    if constexpr (Mode == Absolute) {
+    u8 result = 0;
+    if constexpr (Mode == Immediate) {
+        result = fetchImmedate8();
+    } else if constexpr (Mode == Absolute) {
         auto address = fetchImmedate16();
-        return mmu->readFromMemory(address);
-    }
-
-    if constexpr (Mode == AbsoluteIndexedX) {
+        result = mmu->readFromMemory(address);
+    } else if constexpr (isAbsolute(Mode) && isIndexed(Mode)) {
         auto address = fetchImmedate16();
-        auto index = registers.getX();
+        auto index = Mode == AbsoluteIndexedX ? registers.getX() : registers.getY();
         auto effectiveAddress = address + index;
-        auto result = mmu->readFromMemory((address & 0xFF00) | (effectiveAddress & 0xFF));
+        result = mmu->readFromMemory((address & 0xFF00) | (effectiveAddress & 0xFF));
         if((address & 0xFF00) != (effectiveAddress & 0xFF00)) {
             result = mmu->readFromMemory(effectiveAddress);
         }
-        return result;
-    }
-
-    if constexpr (Mode == AbsoluteIndexedY) {
-        auto address = fetchImmedate16();
-        auto index = registers.getY();
-        auto effectiveAddress = address + index;
-        auto result = mmu->readFromMemory((address & 0xFF00) | (effectiveAddress & 0xFF));
-        if((address & 0xFF00) != (effectiveAddress & 0xFF00)) {
-            result = mmu->readFromMemory(effectiveAddress);
-        }
-        return result;
-    }
-
-    if constexpr (Mode == ZeroPage) {
+    } else if constexpr (Mode == ZeroPage) {
         auto address = fetchImmedate8();
-        return mmu->readFromMemory(address);
-    }
-
-    if constexpr (Mode == ZeroPageIndexedX) {
+        result = mmu->readFromMemory(address);
+    } else if constexpr (isZeroPage(Mode) && isIndexed(Mode)) {
         auto address = fetchImmedate8();
-        auto index = registers.getX();
+        auto index = Mode == ZeroPageIndexedX ? registers.getX() : registers.getY();
         auto effectiveAddress = (address + index) & 0xFF;
         mmu->readFromMemory(address);
-        return mmu->readFromMemory(effectiveAddress);
-    }
-
-    if constexpr (Mode == ZeroPageIndexedY) {
-        auto address = fetchImmedate8();
-        auto index = registers.getY();
-        auto effectiveAddress = (address + index) & 0xFF;
-        mmu->readFromMemory(address);
-        return mmu->readFromMemory(effectiveAddress);
-    }
-
-    if constexpr (Mode == IndirectX) {
+        result = mmu->readFromMemory(effectiveAddress);
+    } else if constexpr (Mode == IndirectX) {
         auto pointerAddress = fetchImmedate8();
         mmu->readFromMemory(pointerAddress);
         auto index = registers.getX();
         auto effectivePointerAddress = pointerAddress + index;
         u16 address = mmu->readFromMemory(effectivePointerAddress & 0xFF) |
             mmu->readFromMemory((effectivePointerAddress + 1) & 0xFF) << 8;
-        return mmu->readFromMemory(address);
-    }
-
-    if constexpr (Mode == IndirectY) {
+        result = mmu->readFromMemory(address);
+    } else if constexpr (Mode == IndirectY) {
         auto pointerAddress = fetchImmedate8();
         u16 address = mmu->readFromMemory(pointerAddress) |
             mmu->readFromMemory((pointerAddress + 1) & 0xFF) << 8;
         auto index = registers.getY();
         auto effectiveAddress = address + index;
-        auto result = mmu->readFromMemory((address & 0xFF00) | (effectiveAddress & 0xFF));
+        result = mmu->readFromMemory((address & 0xFF00) | (effectiveAddress & 0xFF));
         if ((address & 0xFF00) != (effectiveAddress & 0xFF00)) {
             result = mmu->readFromMemory(effectiveAddress);
         }
-        return result;
     }
-
-    // Immediate
-    return fetchImmedate8();
+    return result;
 }
 
 template <AddressingMode Mode>
@@ -91,62 +61,39 @@ inline u16 Cpu::resolveWriteAddress()
         || isZeroPage(Mode) || isIndexedIndirect(Mode) || isIndirectIndexed(Mode);
     static_assert(isSupportedMode, "Unsupported addressing mode used for resolving Write Instruction address");
 
-    if constexpr (Mode == AbsoluteIndexedX) {
+    u16 result = 0;
+    if constexpr (Mode == Absolute) {
+        result = fetchImmedate16();
+    } else if constexpr (isAbsolute(Mode) && isIndexed(Mode)) {
         auto address = fetchImmedate16();
-        auto index = registers.getX();
+        auto index = Mode == AbsoluteIndexedX ? registers.getX() : registers.getY();
         auto effectiveAddress = address + index;
         mmu->readFromMemory((address & 0xFF00) | (effectiveAddress & 0xFF));
-        return effectiveAddress;
-    }
-
-    if constexpr (Mode == AbsoluteIndexedY) {
-        auto address = fetchImmedate16();
-        auto index = registers.getY();
-        auto effectiveAddress = address + index;
-        mmu->readFromMemory((address & 0xFF00) | (effectiveAddress & 0xFF));
-        return effectiveAddress;
-    }
-
-    if constexpr (Mode == ZeroPage) {
-        return fetchImmedate8();
-    }
-
-    if constexpr (Mode == ZeroPageIndexedX) {
+        result = effectiveAddress;
+    } else if constexpr (Mode == ZeroPage) {
+        result = fetchImmedate8();
+    } else if constexpr (isZeroPage(Mode) && isIndexed(Mode)) {
         auto address = fetchImmedate8();
-        auto index = registers.getX();
+        auto index = Mode == ZeroPageIndexedX ? registers.getX() : registers.getY();
         mmu->readFromMemory(address);
-        return (address + index) & 0xFF;
-    }
-
-    if constexpr (Mode == ZeroPageIndexedY) {
-        auto address = fetchImmedate8();
-        auto index = registers.getY();
-        mmu->readFromMemory(address);
-        return (address + index) & 0xFF;
-    }
-
-    if constexpr (Mode == IndirectX) {
+        result = (address + index) & 0xFF;
+    } else if constexpr (Mode == IndirectX) {
         auto pointerAddress = fetchImmedate8();
         mmu->readFromMemory(pointerAddress);
         auto index = registers.getX();
         auto effectivePointerAddress = pointerAddress + index;
-        u16 address = mmu->readFromMemory(effectivePointerAddress & 0xFF) |
+        result = mmu->readFromMemory(effectivePointerAddress & 0xFF) |
             mmu->readFromMemory((effectivePointerAddress + 1) & 0xFF) << 8;
-        return address;
-    }
-
-    if constexpr (Mode == IndirectY) {
+    } else if constexpr (Mode == IndirectY) {
         auto pointerAddress = fetchImmedate8();
         u16 address = mmu->readFromMemory(pointerAddress) |
             mmu->readFromMemory((pointerAddress + 1) & 0xFF) << 8;
         auto index = registers.getY();
         auto effectiveAddress = address + index;
         mmu->readFromMemory((address & 0xFF00) | (effectiveAddress & 0xFF));
-        return effectiveAddress;
+        result = effectiveAddress;
     }
-
-    // Absolute (non-indexed)
-    return fetchImmedate16();
+    return result;
 }
 
 template <AddressingMode Mode>
@@ -177,57 +124,31 @@ template <AddressingMode Mode>
 inline void Cpu::executeReadModifyWrite(const std::function<void(u8&)> &op)
 {
     using enum AddressingMode;
-    constexpr bool isSupportedMode = Mode == Accumulator
-        || isAbsolute(Mode) || isZeroPage(Mode) 
-        || isIndexedIndirect(Mode) || isIndirectIndexed(Mode);
+    constexpr bool isSupportedMode = isAbsolute(Mode) 
+        || isZeroPage(Mode) || isIndexedIndirect(Mode) || isIndirectIndexed(Mode);
     static_assert(isSupportedMode, "Unsupported addressing mode used for performing Read-Modify-Write instruction");
-    
-    if constexpr (Mode == Accumulator) {
-        mmu->readFromMemory(registers.getPc());
-        auto& accumulator = registers.getA();
-        op(accumulator);
-        return;
-    }
     
     u16 address = 0;
     u8 value = 0;
     if constexpr (Mode == Absolute) {
         address = fetchImmedate16();
         value = mmu->readFromMemory(address);
-    }
-    if constexpr (Mode == ZeroPage) {
+    } else if constexpr (Mode == ZeroPage) {
         address = fetchImmedate8();
         value = mmu->readFromMemory(address);
-    }
-    if constexpr (Mode == AbsoluteIndexedX) {
+    } else if constexpr (isAbsolute(Mode) && isIndexed(Mode)) {
         auto baseAddress = fetchImmedate16();
-        auto index = registers.getX();
+        auto index = Mode == AbsoluteIndexedX ? registers.getX() : registers.getY();
         address = baseAddress + index;
         value = mmu->readFromMemory((baseAddress & 0xFF00) | (address & 0xFF));
         value = mmu->readFromMemory(address);
-    }
-    if constexpr (Mode == AbsoluteIndexedY) {
-        auto baseAddress = fetchImmedate16();
-        auto index = registers.getY();
-        address = baseAddress + index;
-        value = mmu->readFromMemory((baseAddress & 0xFF00) | (address & 0xFF));
-        value = mmu->readFromMemory(address);
-    }
-    if constexpr (Mode == ZeroPageIndexedX) {
+    } else if constexpr (isZeroPage(Mode) && isIndexed(Mode)) {
         auto baseAddress = fetchImmedate8();
-        auto index = registers.getX();
+        auto index = Mode == ZeroPageIndexedX ? registers.getX() : registers.getY();
         address = (baseAddress + index) & 0xFF;
         value = mmu->readFromMemory(baseAddress);
         value = mmu->readFromMemory(address);
-    }
-    if constexpr (Mode == ZeroPageIndexedY) {
-        auto baseAddress = fetchImmedate8();
-        auto index = registers.getY();
-        address = (baseAddress + index) & 0xFF;
-        value = mmu->readFromMemory(baseAddress);
-        value = mmu->readFromMemory(address);
-    }
-    if constexpr (Mode == IndirectX) {
+    } else if constexpr (Mode == IndirectX) {
         auto pointerAddress = fetchImmedate8();
         auto index = registers.getX();
         address = mmu->readFromMemory(pointerAddress);
@@ -235,8 +156,7 @@ inline void Cpu::executeReadModifyWrite(const std::function<void(u8&)> &op)
         address = mmu->readFromMemory(effectivePointerAddress) |
             mmu->readFromMemory((effectivePointerAddress + 1) & 0xFF) << 8;
         value = mmu->readFromMemory(address);
-    }
-    if constexpr (Mode == IndirectY) {
+    } else if constexpr (Mode == IndirectY) {
         auto pointerAddress = fetchImmedate8();
         auto baseAddress = mmu->readFromMemory(pointerAddress) |
             mmu->readFromMemory((pointerAddress + 1) & 0xFF) << 8;
@@ -248,6 +168,13 @@ inline void Cpu::executeReadModifyWrite(const std::function<void(u8&)> &op)
     mmu->writeIntoMemory(address, value);
     op(value);
     mmu->writeIntoMemory(address, value);
+}
+
+template <>
+inline void Cpu::executeReadModifyWrite<AddressingMode::Accumulator>(const std::function<void(u8&)>& op) {
+    mmu->readFromMemory(registers.getPc());
+    auto& accumulator = registers.getA();
+    op(accumulator);
 }
 
 /**
