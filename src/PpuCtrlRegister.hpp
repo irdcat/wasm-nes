@@ -1,20 +1,17 @@
 #pragma once
 
-#include "Types.hpp"
+#include "RegisterBit.hpp"
 
 union PpuCtrlRegister
 {
     u8 raw;
-    struct 
-    {
-        u8 baseNametableAddress : 2;
-        u8 vramAddressIncrement : 1;
-        u8 spritePatternTableAddress : 1;
-        u8 backgroundPatternTableAddress : 1;
-        u8 spriteSize : 1;
-        u8 masterSlaveSelect : 1;
-        u8 vblankNmi : 1;
-    };
+    RegisterBit<0, 2> baseNametableAddress;
+    RegisterBit<2> vRamAddressIncrement;
+    RegisterBit<3> spritePatternTableAddress;
+    RegisterBit<4> backgroundPatternTableAddress;
+    RegisterBit<5> spriteSize;
+    RegisterBit<6> masterSlaveSelect;
+    RegisterBit<7> vBlankNmi;
 
     operator u8&() { return raw; }
 

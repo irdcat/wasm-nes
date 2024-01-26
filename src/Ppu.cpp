@@ -16,6 +16,10 @@ u8 Ppu::read(u8 index)
 void Ppu::write(u8 index, u8 data)
 {
     // TODO: Simulate open bus behaviour
+
+    // PPUSCROLL and PPUADDR share the common offset toggle latch
+    static bool offsetToggleLatch = false;
+
     if(index == 0) {
         auto& ppuCtrl = ppuRegisters.getPpuCtrl();
         ppuCtrl = data;
@@ -29,17 +33,21 @@ void Ppu::write(u8 index, u8 data)
         auto& oamData = ppuRegisters.getOamData();
         oamData = data;
     } else if(index == 5) {
-        static bool latch = false;
-        u16 scrollData = latch ? data : data << 8;
         auto& ppuScroll = ppuRegisters.getPpuScroll();
-        u16 oldScrollData = latch ? ppuScroll & 0xFF00 : ppuScroll & 0xFF;
-        ppuScroll = scrollData | oldScrollData;
+        if(offsetToggleLatch) {
+            ppuScroll.y = data;
+        } else {
+            ppuScroll.x = data;
+        }
+        offsetToggleLatch = !offsetToggleLatch;
     } else if(index == 6) {
-        static bool latch = false;
-        u16 scrollData = latch ? data : data << 8;
-        auto& ppuAddr = ppuRegisters.getPpuAddr();
-        u16 oldScrollData = latch ? ppuAddr & 0xFF00 : ppuAddr & 0xFF;
-        ppuAddr = scrollData | oldScrollData;
+        auto ppuAddress = ppuRegisters.getPpuAddr();
+        if(offsetToggleLatch) {
+            ppuAddress.low = data;
+        } else {
+            ppuAddress.high = data;
+        }
+        offsetToggleLatch = !offsetToggleLatch;
     } else if(index == 7) {
         auto& ppuData = ppuRegisters.getPpuData();
         ppuData = data;

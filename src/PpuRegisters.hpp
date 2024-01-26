@@ -3,6 +3,8 @@
 #include "PpuCtrlRegister.hpp"
 #include "PpuMaskRegister.hpp"
 #include "PpuStatusRegister.hpp"
+#include "PpuScrollRegister.hpp"
+#include "PpuAddressRegister.hpp"
 
 class PpuRegisters
 {
@@ -21,9 +23,9 @@ class PpuRegisters
 
         u8& getOamData() { return oamData; }
 
-        u16& getPpuScroll() { return ppuScroll; }
+        PpuScrollRegister& getPpuScroll() { return ppuScroll; }
 
-        u16& getPpuAddr() { return ppuAddr; }
+        PpuAddressRegister& getPpuAddr() { return ppuAddr; }
 
         u8& getPpuData() { return ppuData; }
 
@@ -39,11 +41,9 @@ class PpuRegisters
         // 0x2004 OAMDATA - OAM data port
         u8 oamData;
         // 0x2005 PPUSCROLL - Ppu scrolling position register (X Scroll on first write, Y Scroll on second write)
-        // TODO: Make a union separating X and Y scroll
-        u16 ppuScroll;
+        PpuScrollRegister ppuScroll;
         // 0x2006 PPUADDR - Ppu address register (MSB on first write, LSB on second write)
-        // TODO: Make a union separating Low and High byte
-        u16 ppuAddr;
+        PpuAddressRegister ppuAddr;
         // 0x2007 PPUDATA - Ppu data port
         u8 ppuData;
 };
