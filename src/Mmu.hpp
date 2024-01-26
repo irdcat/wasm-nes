@@ -20,8 +20,12 @@ class Mmu
 
     private:
         std::shared_ptr<Ppu> ppu;
-
         std::array<u8, 0x800> internalRam;
 
         void tick();
+
+        template <bool IsWrite>
+        u8 memoryAccess(u16 addr, u8 value = 0);
 };
+
+#include "Mmu.inl"
