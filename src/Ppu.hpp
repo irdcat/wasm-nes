@@ -1,8 +1,9 @@
 #pragma once
 
 #include <memory>
-#include "Cpu.hpp"
 #include "PpuRegisters.hpp"
+
+class Cpu;
 
 class Ppu
 {
@@ -28,6 +29,8 @@ class Ppu
 
         template <bool IsWrite>
         u8 access(u8 index, u8 data = 0);
+
+        void triggerNmi();
 };
 
 #include "Ppu.inl"
