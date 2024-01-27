@@ -21,8 +21,7 @@ u8 Ppu::access(u8 index, u8 data)
                 auto oldVBlankNmi = ppuCtrl.VBlankNmi;
                 ppuCtrl = data;
                 if(!oldVBlankNmi && ppuCtrl.VBlankNmi && ppuStatus.inVBlank) {
-                    auto cpu = cpuWeak.lock();
-                    cpu->interrupt(InterruptType::NMI);
+                    triggerNmi();
                 }
             }
             break;

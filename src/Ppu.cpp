@@ -1,4 +1,5 @@
 #include "Ppu.hpp"
+#include "Cpu.hpp"
 
 Ppu::Ppu(const std::shared_ptr<Cpu>& cpu)
     : cpuWeak(cpu)
@@ -40,8 +41,7 @@ void Ppu::tick()
         if(scanline == 241) {
             ppuStatus.inVBlank = 1;
             ppuStatus.spriteZeroHit = 0;
-            auto cpu = cpuWeak.lock();
-            cpu->interrupt(InterruptType::NMI);
+            triggerNmi();
         }
 
         if(scanline == 262) {
@@ -50,4 +50,10 @@ void Ppu::tick()
             ppuStatus.inVBlank = 0;
         }
     }
+}
+
+void Ppu::triggerNmi()
+{
+    auto cpu = cpuWeak.lock();
+    cpu->interrupt(InterruptType::NMI);
 }
