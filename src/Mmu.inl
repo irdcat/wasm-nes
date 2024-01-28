@@ -19,9 +19,19 @@ inline u8 Mmu::memoryAccess(u16 addr, u8 value)
         }
         ppu->write(ppuMmioAddr, value);
     } else if(addr < 0x4018) {
-        // TODO: APU, Joypads, OAM DMA
-    } else if(addr < 0x4020) {
-        // Normally disabled functionality
+        auto mmioAddr = addr & 0x1F;
+        switch (mmioAddr)
+        {
+            case 0x14:
+                if(IsWrite) {
+                    for(unsigned byte = 0; byte < 256; byte++) {
+                        memoryAccess<1>(0x2004, memoryAccess<0>((value & 7) * 0x100 + byte));
+                    }
+                }
+                break;
+            default:
+                break;
+        }
     } else {
         if constexpr (!IsWrite) {
             return cartridge->read(addr);
