@@ -1,6 +1,8 @@
 #pragma once
 
 #include <memory>
+
+#include "Oam.hpp"
 #include "PpuRegisters.hpp"
 
 class Cpu;
@@ -21,11 +23,15 @@ class Ppu
     private:
         std::weak_ptr<Cpu> cpuWeak;
         PpuRegisters registers;
+
         unsigned openBusDecayTimer;
         u8 openBusContents;
         u8 vramReadBuffer;
         int scanline;
         unsigned renderingPositionX;
+
+        Oam<64> oam;
+        Oam<8> oam2;
 
         template <bool IsWrite>
         u8 access(u8 index, u8 data = 0);

@@ -48,10 +48,11 @@ u8 Ppu::access(u8 index, u8 data)
         case 4: // 0x2004 OAMDATA - OAM data port
             if constexpr (IsWrite) {
                 auto& oamAddr = registers.getOamAddr();
+                oam.raw[oamAddr] = data;
                 oamAddr = oamAddr + 1;
-                // TODO: Writing to OAM
             } else {
-                // TODO: Reading from OAM
+                const auto& oamAddr = registers.getOamAddr();
+                result = oam.raw[oamAddr];
                 refreshOpenBus(result);
             }
             break;
