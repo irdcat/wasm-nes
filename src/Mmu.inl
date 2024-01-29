@@ -29,6 +29,7 @@ inline u8 Mmu::memoryAccess(u16 addr, u8 value)
                     }
                 }
                 break;
+            // TODO: Rest of the MMIO registers
             default:
                 break;
         }

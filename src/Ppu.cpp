@@ -1,8 +1,9 @@
 #include "Ppu.hpp"
 #include "Cpu.hpp"
 
-Ppu::Ppu(const std::shared_ptr<Cpu>& cpu)
+Ppu::Ppu(const std::shared_ptr<Cpu>& cpu, const std::shared_ptr<Cartridge>& cartridge)
     : cpuWeak(cpu)
+    , cartridgeWeak(cartridge)
 {
     openBusDecayTimer = 0;
     openBusContents = 0;
@@ -56,4 +57,29 @@ void Ppu::triggerNmi()
 {
     auto cpu = cpuWeak.lock();
     cpu->interrupt(InterruptType::NMI);
+}
+
+u8 Ppu::ppuRead(u16 addr)
+{
+    addr &= 0x3FFF;
+    if(addr >= 0x3F00) {
+        addr = addr % 4 == 0 ? addr & 0xF : addr & 0x1F;
+        return palette[addr];
+    }
+
+    auto cartridge = cartridgeWeak.lock();
+    return cartridge->read(addr);
+}
+
+void Ppu::ppuWrite(u16 addr, u8 value)
+{
+    addr &= 0x3FFF;
+    if(addr >= 0x3F00) {
+        addr = addr % 4 == 0 ? addr & 0xF : addr & 0x1F;
+        palette[addr] = value;
+        return;
+    }
+
+    auto cartridge = cartridgeWeak.lock();
+    cartridge->write(addr, value);
 }
