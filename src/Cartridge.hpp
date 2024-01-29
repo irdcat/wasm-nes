@@ -1,9 +1,10 @@
 #pragma once
 
-#include <memory>
 #include <string>
+#include <vector>
+#include <array>
 
-#include "CartridgeMapper.hpp"
+#include "Types.hpp"
 
 class Cartridge
 {
@@ -12,12 +13,17 @@ class Cartridge
 
         bool loadFromFile(std::string filename);
 
-        void setMapper(std::unique_ptr<CartridgeMapper> mapper);
-
         void write(u16 addr, u8 value);
 
         u8 read(u16 addr);
 
     private:
-        std::unique_ptr<CartridgeMapper> mapper;
+        std::vector<u8> prgRom;
+        std::vector<u8> chrRom;
+        std::vector<u8> prgRam;
+        std::vector<u8> chrRam;
+
+        std::array<u16, 4> nta;
+
+        u8& memoryRef(u16 addr);
 };

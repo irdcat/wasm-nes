@@ -12,12 +12,17 @@ u8 Ppu::access(u8 index, u8 data)
         refreshOpenBus(data);
     }
 
+    auto& ppuCtrl = registers.getPpuCtrl();
+    auto& ppuMask = registers.getPpuMask();
+    auto& ppuStatus = registers.getPpuStatus();
+    auto& oamAddr = registers.getOamAddr();
+    auto& ppuScroll = registers.getPpuScroll();
+    auto& ppuAddr = registers.getPpuAddr();
+
     switch(index)
     {
         case 0: // 0x2000 PPUCTRL - Ppu control register
             if constexpr (IsWrite) {
-                auto& ppuCtrl = registers.getPpuCtrl();
-                const auto& ppuStatus = registers.getPpuStatus();
                 auto oldVBlankNmi = ppuCtrl.VBlankNmi;
                 ppuCtrl = data;
                 if(!oldVBlankNmi && ppuCtrl.VBlankNmi && ppuStatus.inVBlank) {
@@ -27,13 +32,11 @@ u8 Ppu::access(u8 index, u8 data)
             break;
         case 1: // 0x2001 PPUMASK - Ppu mask register
             if constexpr (IsWrite) {
-                auto& ppuMask = registers.getPpuMask();
                 ppuMask = data;
             }
             break;
         case 2: // 0x2002 PPUSTATUS - Ppu status register
             if constexpr (!IsWrite) {
-                auto& ppuStatus = registers.getPpuStatus();
                 result = ppuStatus | (openBusContents & 0x1F);
                 ppuStatus.inVBlank = false;
                 offsetToggleLatch = false;
@@ -41,24 +44,20 @@ u8 Ppu::access(u8 index, u8 data)
             break;
         case 3: // 0x2003 OAMADDR - OAM address port
             if constexpr (IsWrite) {
-                auto& oamAddr = registers.getOamAddr();
                 oamAddr = data;
             }
             break;
         case 4: // 0x2004 OAMDATA - OAM data port
             if constexpr (IsWrite) {
-                auto& oamAddr = registers.getOamAddr();
                 oam.raw[oamAddr] = data;
                 oamAddr = oamAddr + 1;
             } else {
-                const auto& oamAddr = registers.getOamAddr();
                 result = oam.raw[oamAddr];
                 refreshOpenBus(result);
             }
             break;
         case 5: // 0x2005 PPUSCROLL - Ppu scrolling position register (X Scroll on first write, Y Scroll on second write)
             if constexpr (IsWrite) {
-                auto& ppuScroll = registers.getPpuScroll();
                 if(offsetToggleLatch) {
                     ppuScroll.y = data;
                 } else {
@@ -69,11 +68,10 @@ u8 Ppu::access(u8 index, u8 data)
             break;
         case 6: // 0x2006 PPUADDR - Ppu address register (MSB on first write, LSB on second write)
             if constexpr (IsWrite) {
-                auto ppuAddress = registers.getPpuAddr();
                 if(offsetToggleLatch) {
-                    ppuAddress.low = data;
+                    ppuAddr.low = data;
                 } else {
-                    ppuAddress.high = data;
+                    ppuAddr.high = data;
                 }
                 offsetToggleLatch = !offsetToggleLatch;
             }
@@ -81,15 +79,17 @@ u8 Ppu::access(u8 index, u8 data)
         case 7: // 0x2007 PPUDATA - Ppu data register
             result = vramReadBuffer;
             if constexpr(IsWrite) {
-                // TODO: Write to PPU address space
+                ppuWrite(ppuAddr, data);
+                result = data;
             } else {
-                const auto& ppuCtrl = registers.getPpuCtrl();
-                auto& ppuAddress = registers.getPpuAddr();
-                result = vramReadBuffer;
-                // TODO: Load from PPU address space into the vramReadBuffer
-                refreshOpenBus(result);
-                ppuAddress = ppuAddress + (ppuCtrl.vramAddressIncrement ? 32 : 1);
+                auto ppuData = ppuRead(ppuAddr);
+                if((ppuAddr & 0x3F00) == 0x3F00) {
+                    result = (openBusContents & 0xC0) | (ppuData & 0x3F);
+                }
+                vramReadBuffer = ppuData;
             }
+            refreshOpenBus(result);
+            ppuAddr = ppuAddr + (ppuCtrl.vramAddressIncrement ? 32 : 1);
             break;
         default:
             break;

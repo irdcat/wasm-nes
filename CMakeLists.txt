@@ -6,8 +6,7 @@ if(EMSCRIPTEN)
         src/Cpu.cpp
         src/Mmu.cpp
         src/Ppu.cpp
-        src/Cartridge.cpp
-        src/NRomMapper.cpp)
+        src/Cartridge.cpp)
     set(CMAKE_EXECUTABLE_SUFFIX ".html")
     set(CXX_STANDARD 20)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -sWASM=1 -sALLOW_MEMORY_GROWTH=1")
@@ -20,8 +19,7 @@ if(NOT EMSCRIPTEN)
         src/Cpu.cpp
         src/Mmu.cpp
         src/Ppu.cpp
-        src/Cartridge.cpp
-        src/NRomMapper.cpp)
+        src/Cartridge.cpp)
     set(TEST_SOURCES
         tests/CpuTest.cpp)
     set(CXX_STANDARD 20)
