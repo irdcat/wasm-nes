@@ -24,8 +24,6 @@ void Ppu::write(u8 index, u8 data)
 
 void Ppu::tick()
 {
-    auto& ppuStatus = registers.getPpuStatus();
-
     if(openBusDecayTimer > 0) {
         openBusDecayTimer--;
         if(openBusDecayTimer == 0) {
@@ -40,15 +38,15 @@ void Ppu::tick()
         scanline++;
 
         if(scanline == 241) {
-            ppuStatus.inVBlank = 1;
-            ppuStatus.spriteZeroHit = 0;
+            registers.ppuStatus.inVBlank = 1;
+            registers.ppuStatus.spriteZeroHit = 0;
             triggerNmi();
         }
 
         if(scanline == 262) {
             scanline = 0;
-            ppuStatus.spriteZeroHit = 0;
-            ppuStatus.inVBlank = 0;
+            registers.ppuStatus.spriteZeroHit = 0;
+            registers.ppuStatus.inVBlank = 0;
         }
     }
 }
