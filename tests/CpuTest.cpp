@@ -194,42 +194,41 @@ int main()
     };
 
     std::unique_ptr<Cpu> cpu = std::make_unique<Cpu>(testMmu);
-    auto& pc = cpu->getRegisters().getPc();
-    pc = NES_TEST_START_ADDR;
+    cpu->getRegisters().pc = NES_TEST_START_ADDR;
 
     while(nesTestLogParser.canParseNextLine())
     {
         auto expected = nesTestLogParser.parseNextLine();
         auto registers = cpu->getRegisters();
 
-        if(registers.getPc() != expected.instructionAddress)
+        if(registers.pc != expected.instructionAddress)
         {
-            printAssertionError("PC", expected.instructionAddress, registers.getPc(), expected.line, expected.prevLine, expected.lineNumber, true);
+            printAssertionError("PC", expected.instructionAddress, registers.pc, expected.line, expected.prevLine, expected.lineNumber, true);
             return 1;
         }
-        if(registers.getA() != expected.registerA)
+        if(registers.a != expected.registerA)
         {
-            printAssertionError("A", expected.registerA, registers.getA(), expected.line, expected.prevLine, expected.lineNumber, true);
+            printAssertionError("A", expected.registerA, registers.a, expected.line, expected.prevLine, expected.lineNumber, true);
             return 1;
         }
-        if(registers.getX() != expected.registerX)
+        if(registers.x != expected.registerX)
         {
-            printAssertionError("X", expected.registerX, registers.getX(), expected.line, expected.prevLine, expected.lineNumber, true);
+            printAssertionError("X", expected.registerX, registers.x, expected.line, expected.prevLine, expected.lineNumber, true);
             return 1;
         }
-        if(registers.getY() != expected.registerY)
+        if(registers.y != expected.registerY)
         {
-            printAssertionError("Y", expected.registerY, registers.getY(), expected.line, expected.prevLine, expected.lineNumber, true);
+            printAssertionError("Y", expected.registerY, registers.y, expected.line, expected.prevLine, expected.lineNumber, true);
             return 1;
         }
-        if(registers.getP() != expected.registerP)
+        if(registers.p != expected.registerP)
         {
-            printAssertionError("P", expected.registerP, registers.getP(), expected.line, expected.prevLine, expected.lineNumber, true);
+            printAssertionError("P", expected.registerP, registers.p, expected.line, expected.prevLine, expected.lineNumber, true);
             return 1;
         }
-        if(registers.getS() != expected.stackPointer)
+        if(registers.s != expected.stackPointer)
         {
-            printAssertionError("SP", expected.stackPointer, registers.getS(), expected.line, expected.prevLine, expected.lineNumber, true);
+            printAssertionError("SP", expected.stackPointer, registers.s, expected.line, expected.prevLine, expected.lineNumber, true);
             return 1;
         }
 

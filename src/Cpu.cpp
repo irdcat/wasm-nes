@@ -3,17 +3,11 @@
 Cpu::Cpu(const std::shared_ptr<Mmu> &mmu)
     : mmu(mmu)
 {
-    auto& a = registers.getA();
-    auto& x = registers.getX();
-    auto& y = registers.getY();
-    auto& p = registers.getP();
-    auto& sp = registers.getS();
-
-    a = 0;
-    x = 0;
-    y = 0;
-    p = 0x20;
-    sp = 0;
+    registers.a = 0;
+    registers.x = 0;
+    registers.y = 0;
+    registers.p = 0x20;
+    registers.s = 0;
     halted = false;
     nmiPending = false;
     irqPending = false;
@@ -338,41 +332,37 @@ CpuRegisters &Cpu::getRegisters()
 
 void Cpu::handleInterrupt(InterruptType type)
 {
-    auto& flags = registers.getP();
-    auto& pc = registers.getPc();
-    
-    if(flags.interruptDisable && type == InterruptType::IRQ) {
+    if(registers.p.interruptDisable && type == InterruptType::IRQ) {
         return;
     }
 
     if(type == InterruptType::BRK || type == InterruptType::RESET) {
         fetchImmedate8();
-        flags.breakFlag = type == InterruptType::BRK;
+        registers.p.breakFlag = type == InterruptType::BRK;
     }
 
-    pushIntoStack16(pc);
-    pushIntoStack8(flags.raw);
+    pushIntoStack16(registers.pc);
+    pushIntoStack8(registers.p);
 
-    flags.interruptDisable = true;
+    registers.p.interruptDisable = true;
 
     switch(type) {
         case InterruptType::BRK:
         case InterruptType::IRQ:
-            pc = mmu->readFromMemory(0xFFFE) | (mmu->readFromMemory(0xFFFF) << 8);
+            registers.pc = mmu->readFromMemory(0xFFFE) | (mmu->readFromMemory(0xFFFF) << 8);
             break;
         case InterruptType::RESET:
-            pc = mmu->readFromMemory(0xFFFC) | (mmu->readFromMemory(0xFFFD) << 8);
+            registers.pc = mmu->readFromMemory(0xFFFC) | (mmu->readFromMemory(0xFFFD) << 8);
             break;
         case InterruptType::NMI:
-            pc = mmu->readFromMemory(0xFFFA) | (mmu->readFromMemory(0xFFFB) << 8);
+            registers.pc = mmu->readFromMemory(0xFFFA) | (mmu->readFromMemory(0xFFFB) << 8);
             break;
     }
 }
 
 u8 Cpu::fetchImmedate8()
 {
-    auto& pc = registers.getPc();
-    return mmu->readFromMemory(pc++);
+    return mmu->readFromMemory(registers.pc++);
 }
 
 u16 Cpu::fetchImmedate16()
@@ -383,14 +373,12 @@ u16 Cpu::fetchImmedate16()
 
 u8 Cpu::popFromStack8()
 {
-    auto& s = registers.getS();
-    return mmu->readFromMemory(0x100 | ++s);
+    return mmu->readFromMemory(0x100 | ++registers.s);
 }
 
 void Cpu::pushIntoStack8(u8 value)
 {
-    auto& s = registers.getS();
-    mmu->writeIntoMemory(0x100 | s--, value);
+    mmu->writeIntoMemory(0x100 | registers.s--, value);
 }
 
 u16 Cpu::popFromStack16()
@@ -408,12 +396,10 @@ void Cpu::pushIntoStack16(u16 value)
 
 void Cpu::updateZeroFlag(auto value)
 {
-    auto& flags = registers.getP();
-    flags.zero = value == 0;
+    registers.p.zero = value == 0;
 }
 
 void Cpu::updateNegativeFlag(auto value)
 {
-    auto& flags = registers.getP();
-    flags.negative = (value >> 7) & 0x1;
+    registers.p.negative = (value >> 7) & 0x1;
 }
