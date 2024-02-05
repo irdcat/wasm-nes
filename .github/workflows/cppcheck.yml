@@ -14,3 +14,4 @@ jobs:
         uses: chmorgan/cppcheck-action@v1.4
         with:
           github_token: ${{secrets.GITHUB_TOKEN}}
+          other_options: -itests
