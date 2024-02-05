@@ -28,9 +28,4 @@ class Mmu
         bool resetSignalled;
 
         void tick();
-
-        template <bool IsWrite>
-        u8 memoryAccess(u16 addr, u8 value = 0);
 };
-
-#include "Mmu.inl"

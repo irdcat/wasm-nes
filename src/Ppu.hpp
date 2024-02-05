@@ -32,6 +32,7 @@ class Ppu
         u8 vramReadBuffer;
         int scanline;
         unsigned renderingPositionX;
+        bool offsetToggleLatch;
 
         Oam<64> oam;
         Oam<8> oam2;
@@ -41,9 +42,8 @@ class Ppu
         u8 access(u8 index, u8 data = 0);
 
         void triggerNmi();
+        void refreshOpenBus(u8 value);
 
         u8 ppuRead(u16 addr);
         void ppuWrite(u16 addr, u8 value);
 };
-
-#include "Ppu.inl"
