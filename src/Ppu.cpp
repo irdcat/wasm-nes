@@ -8,7 +8,7 @@ Ppu::Ppu(const std::shared_ptr<Cpu>& cpu, const std::shared_ptr<Cartridge>& cart
     openBusDecayTimer = 0;
     openBusContents = 0;
     vramReadBuffer = 0;
-    scanline = -1;
+    scanline = 261;
     renderingPositionX = 0;
     offsetToggleLatch = false;
 }
@@ -79,13 +79,20 @@ void Ppu::tick()
         }
     }
 
+    if(scanline < 240 || scanline == 261)
+    {
+        if(registers.ppuMask.showBgSp) {
+            renderingTick();
+        }
+    }
+
     renderingPositionX++;
     if(renderingPositionX >= 341) {
         
         renderingPositionX = 0;
         scanline++;
 
-        if(scanline == 241) {
+        if(scanline == 241 && renderingPositionX == 1) {
             registers.ppuStatus.inVBlank = 1;
             registers.ppuStatus.spriteZeroHit = 0;
             triggerNmi();
@@ -96,6 +103,63 @@ void Ppu::tick()
             registers.ppuStatus.spriteZeroHit = 0;
             registers.ppuStatus.inVBlank = 0;
         }
+    }
+}
+
+void Ppu::renderingTick()
+{
+    const auto& x = renderingPositionX;
+    auto shouldDecodeTile = (x >= 0 && x <= 255) || (x >= 320 && x <= 335);
+
+    auto baseNtAddr = 0x2000 + registers.ppuCtrl.baseNametableAddress * 0x400;
+    auto baseBgAddr = 0x1000 * registers.ppuCtrl.backgroundPatternTableAddress;
+
+    auto interleave = [](auto lsb, auto msb) {
+        auto pattern = lsb | (msb << 8);
+        pattern = (pattern & 0xF00F) | ((pattern & 0x0F00) >> 4) | ((pattern & 0x00F0) << 4);
+        pattern = (pattern & 0xC3C3) | ((pattern & 0x3030) >> 2) | ((pattern & 0x0C0C) << 2);
+        pattern = (pattern & 0x9999) | ((pattern & 0x4444) >> 1) | ((pattern & 0x2222) << 1);
+        return pattern;
+    };
+
+    switch (x%8)
+    {
+        case 0: // Point to attribute table
+            attributeTableAddress = baseNtAddr + 0x3C0;
+            break;
+
+        case 1: // Nametable access
+            patternTableAddress = baseBgAddr + 16 * ppuRead(attributeTableAddress);
+            if(shouldDecodeTile) {
+                bgShiftPattern = (bgShiftPattern >> 16) | (tilePattern << 16);
+                bgShiftAttributes = (bgShiftAttributes >> 16) | ((tileAttributes * 0x5555) << 16);
+            }
+            break;
+
+        case 2: // Point to nametable or attribute table
+            if(shouldDecodeTile) {
+                attributeTableAddress = baseNtAddr + 0x3C0;
+            } else {
+                attributeTableAddress = 0x2000 + (registers.ppuAddr & 0xFFF);
+            }
+            break;
+
+        case 3: // Attribute table access
+            if(shouldDecodeTile) {
+                tileAttributes = ppuRead(attributeTableAddress) & 3;
+            }
+            break;
+
+        case 5: // Background LSB
+            tilePattern = ppuRead(patternTableAddress);
+            break;
+
+        case 7: // Background MSB
+            tilePattern = interleave(tilePattern, (ppuRead(patternTableAddress | 8) << 8));
+            break;
+
+        default:
+            break;
     }
 }
 

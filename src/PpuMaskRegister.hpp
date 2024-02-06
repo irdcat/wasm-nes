@@ -14,6 +14,8 @@ union PpuMaskRegister
     RegisterBit<6> emphasizeGreen;
     RegisterBit<7> emphasizeBlue;
 
+    RegisterBit<3, 2> showBgSp;
+
     operator u8&() { return raw; }
 
     PpuMaskRegister& operator=(u8 value) { raw = value; return *this; }
