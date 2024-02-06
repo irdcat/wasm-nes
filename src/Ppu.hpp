@@ -30,16 +30,24 @@ class Ppu
         unsigned openBusDecayTimer;
         u8 openBusContents;
         u8 vramReadBuffer;
-        int scanline;
+        unsigned scanline;
         unsigned renderingPositionX;
         bool offsetToggleLatch;
+        
+        u16 patternTableAddress;
+        u16 attributeTableAddress;
+        
+        u16 tilePattern;
+        u16 tileAttributes;
+
+        u32 bgShiftPattern;
+        u32 bgShiftAttributes;
 
         Oam<64> oam;
         Oam<8> oam2;
         std::array<u8, 32> palette;
 
-        template <bool IsWrite>
-        u8 access(u8 index, u8 data = 0);
+        void renderingTick();
 
         void triggerNmi();
         void refreshOpenBus(u8 value);
