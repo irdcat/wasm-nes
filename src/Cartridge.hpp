@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include <fstream>
 #include <vector>
 #include <array>
 
@@ -11,7 +11,7 @@ class Cartridge
     public:
         Cartridge() = default;
 
-        bool loadFromFile(std::string filename);
+        bool loadFromFile(std::ifstream file);
 
         void write(u16 addr, u8 value);
 
