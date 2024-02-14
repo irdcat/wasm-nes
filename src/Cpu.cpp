@@ -11,7 +11,6 @@ Cpu::Cpu(const std::shared_ptr<Mmu> &mmu)
     halted = false;
     nmiPending = false;
     irqPending = false;
-    reset();
 }
 
 void Cpu::step()

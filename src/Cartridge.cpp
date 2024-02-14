@@ -22,9 +22,9 @@ bool Cartridge::loadFromFile(std::ifstream file)
     NesHeaderData nesHeaderData = {
         .prgRomBanks = headerData[4],
         .chrRomBanks = headerData[5],
-        .mapperNo = (flags6 >> 4) | (flags7 & 0xF0),
-        .persistentMemory = ((flags6 & 0x2) >> 1),
-        .trainer = ((flags6 & 0x4) >> 2),
+        .mapperNo = static_cast<unsigned>((flags6 >> 4) | (flags7 & 0xF0)),
+        .persistentMemory = static_cast<bool>(((flags6 & 0x2) >> 1)),
+        .trainer = static_cast<bool>(((flags6 & 0x4) >> 2)),
         .mirroring = ((flags6 & 0x8) >> 3) ? FourScreen : ((flags6 & 0x1) ? Horizontal : Vertical)
     };
 

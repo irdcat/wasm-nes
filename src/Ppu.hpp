@@ -6,13 +6,16 @@
 #include "Oam.hpp"
 #include "Cartridge.hpp"
 #include "PpuRegisters.hpp"
+#include "PpuFramebuffer.hpp"
 
 class Cpu;
 
 class Ppu
 {
     public:
-        Ppu(const std::shared_ptr<Cpu>& cpu, const std::shared_ptr<Cartridge>& cartridge);
+        Ppu(const std::shared_ptr<Cpu>& cpu, 
+            const std::shared_ptr<Cartridge>& cartridge,
+            const std::shared_ptr<PpuFramebuffer>& framebuffer);
 
         ~Ppu() = default;
 
@@ -22,9 +25,12 @@ class Ppu
 
         void tick();
 
+        bool isInVblank();
+
     private:
         std::weak_ptr<Cpu> cpuWeak;
         std::weak_ptr<Cartridge> cartridgeWeak;
+        std::weak_ptr<PpuFramebuffer> framebufferWeak;
         PpuRegisters registers;
 
         unsigned openBusDecayTimer;
@@ -48,6 +54,7 @@ class Ppu
         std::array<u8, 32> palette;
 
         void renderingTick();
+        void renderPixel();
 
         void triggerNmi();
         void refreshOpenBus(u8 value);

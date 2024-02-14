@@ -1,16 +1,19 @@
 #include "Ppu.hpp"
 #include "Cpu.hpp"
 
-Ppu::Ppu(const std::shared_ptr<Cpu>& cpu, const std::shared_ptr<Cartridge>& cartridge)
+Ppu::Ppu(const std::shared_ptr<Cpu>& cpu, 
+    const std::shared_ptr<Cartridge>& cartridge, 
+    const std::shared_ptr<PpuFramebuffer>& framebuffer)
     : cpuWeak(cpu)
     , cartridgeWeak(cartridge)
+    , framebufferWeak(framebuffer)
+    , openBusDecayTimer(0)
+    , openBusContents(0)
+    , vramReadBuffer(0)
+    , scanline(261)
+    , renderingPositionX(0)
+    , offsetToggleLatch(false)
 {
-    openBusDecayTimer = 0;
-    openBusContents = 0;
-    vramReadBuffer = 0;
-    scanline = 261;
-    renderingPositionX = 0;
-    offsetToggleLatch = false;
 }
 
 u8 Ppu::read(u8 index)
@@ -84,6 +87,9 @@ void Ppu::tick()
         if(registers.ppuMask.showBgSp) {
             renderingTick();
         }
+        if(scanline >= 0 && renderingPositionX < 256) {
+            renderPixel();
+        }
     }
 
     renderingPositionX++;
@@ -106,10 +112,15 @@ void Ppu::tick()
     }
 }
 
+bool Ppu::isInVblank()
+{
+    return registers.ppuStatus.inVBlank;
+}
+
 void Ppu::renderingTick()
 {
-    const auto& x = renderingPositionX;
-    auto shouldDecodeTile = (x >= 0 && x <= 255) || (x >= 320 && x <= 335);
+    auto shouldDecodeTile = (renderingPositionX >= 0 && renderingPositionX <= 255) 
+        || (renderingPositionX >= 320 && renderingPositionX <= 335);
 
     auto baseNtAddr = 0x2000 + registers.ppuCtrl.baseNametableAddress * 0x400;
     auto baseBgAddr = 0x1000 * registers.ppuCtrl.backgroundPatternTableAddress;
@@ -122,7 +133,7 @@ void Ppu::renderingTick()
         return pattern;
     };
 
-    switch (x%8)
+    switch (renderingPositionX % 8)
     {
         case 0: // Point to attribute table
             attributeTableAddress = baseNtAddr + 0x3C0;
@@ -161,6 +172,26 @@ void Ppu::renderingTick()
         default:
             break;
     }
+}
+
+void Ppu::renderPixel()
+{
+    bool isOnEdge = renderingPositionX < 8 || renderingPositionX > 248;
+    bool showBackground = registers.ppuMask.showBg && (!isOnEdge || registers.ppuMask.showBg8);
+    bool showSprites = registers.ppuMask.showSp && (!isOnEdge || registers.ppuMask.showSp8);
+
+    unsigned patternPosition = 15 - (((renderingPositionX & 7) + 8 * !!(renderingPositionX * 7)) & 0xF);
+    unsigned pixel = 0;
+    unsigned attributes = 0;
+    if(showBackground) {
+        pixel = (bgShiftPattern >> (patternPosition * 2)) & 3;
+        attributes = (bgShiftAttributes >> (patternPosition * 2)) & (pixel > 0 ? 3 : 0);
+    } else if(registers.ppuAddr & 0x3F00 == 0x3F00 && !registers.ppuMask.showBgSp) {
+        pixel = registers.ppuAddr;
+    }
+
+    pixel = palette[(attributes * 4 + pixel) & 0x1F] & registers.ppuMask.greyscale ? 0x30 : 0x3F;
+    framebufferWeak.lock()->setColor(renderingPositionX, scanline, pixel);
 }
 
 void Ppu::triggerNmi()
