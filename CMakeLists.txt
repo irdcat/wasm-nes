@@ -25,7 +25,8 @@ if(NOT EMSCRIPTEN)
         src/Cpu.cpp
         src/Mmu.cpp
         src/Ppu.cpp
-        src/Cartridge.cpp)
+        src/Cartridge.cpp
+        src/PpuFramebuffer.cpp)
     set(TEST_SOURCES
         tests/TestMmu.cpp
         tests/main.cpp)
