@@ -13,6 +13,13 @@ Ppu::Ppu(const std::shared_ptr<Cpu>& cpu,
     , scanline(261)
     , renderingPositionX(0)
     , offsetToggleLatch(false)
+    , registers()
+    , patternTableAddress(0)
+    , attributeTableAddress(0)
+    , tilePattern(0)
+    , tileAttributes(0)
+    , bgShiftPattern(0)
+    , bgShiftAttributes(0)
 {
 }
 
@@ -87,9 +94,21 @@ void Ppu::tick()
         if(registers.ppuMask.showBgSp) {
             renderingTick();
         }
-        if(scanline >= 0 && renderingPositionX < 256) {
+        if(scanline != 261 && renderingPositionX < 256) {
             renderPixel();
         }
+    }
+
+    if(scanline == 241 && renderingPositionX == 1) {
+        registers.ppuStatus.inVBlank = 1;
+        registers.ppuStatus.spriteZeroHit = 0;
+        triggerNmi();
+    }
+
+    if(scanline == 262) {
+        scanline = 0;
+        registers.ppuStatus.spriteZeroHit = 0;
+        registers.ppuStatus.inVBlank = 0;
     }
 
     renderingPositionX++;
@@ -97,22 +116,10 @@ void Ppu::tick()
         
         renderingPositionX = 0;
         scanline++;
-
-        if(scanline == 241 && renderingPositionX == 1) {
-            registers.ppuStatus.inVBlank = 1;
-            registers.ppuStatus.spriteZeroHit = 0;
-            triggerNmi();
-        }
-
-        if(scanline == 262) {
-            scanline = 0;
-            registers.ppuStatus.spriteZeroHit = 0;
-            registers.ppuStatus.inVBlank = 0;
-        }
     }
 }
 
-bool Ppu::isInVblank()
+bool Ppu::isInVblank() const
 {
     return registers.ppuStatus.inVBlank;
 }
@@ -178,7 +185,6 @@ void Ppu::renderPixel()
 {
     bool isOnEdge = renderingPositionX < 8 || renderingPositionX > 248;
     bool showBackground = registers.ppuMask.showBg && (!isOnEdge || registers.ppuMask.showBg8);
-    bool showSprites = registers.ppuMask.showSp && (!isOnEdge || registers.ppuMask.showSp8);
 
     unsigned patternPosition = 15 - (((renderingPositionX & 7) + 8 * !!(renderingPositionX * 7)) & 0xF);
     unsigned pixel = 0;
@@ -186,11 +192,11 @@ void Ppu::renderPixel()
     if(showBackground) {
         pixel = (bgShiftPattern >> (patternPosition * 2)) & 3;
         attributes = (bgShiftAttributes >> (patternPosition * 2)) & (pixel > 0 ? 3 : 0);
-    } else if(registers.ppuAddr & 0x3F00 == 0x3F00 && !registers.ppuMask.showBgSp) {
+    } else if((registers.ppuAddr & 0x3F00) == 0x3F00 && !registers.ppuMask.showBgSp) {
         pixel = registers.ppuAddr;
     }
 
-    pixel = palette[(attributes * 4 + pixel) & 0x1F] & registers.ppuMask.greyscale ? 0x30 : 0x3F;
+    pixel = palette[(attributes * 4 + pixel) & 0x1F] & (registers.ppuMask.greyscale ? 0x30 : 0x3F);
     framebuffer->setColor(renderingPositionX, scanline, pixel);
 }
 

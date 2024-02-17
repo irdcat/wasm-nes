@@ -9,7 +9,7 @@
 class Mmu
 {
     public:
-        Mmu() = default;
+        Mmu();
 
         Mmu(const std::shared_ptr<Ppu>& ppu, const std::shared_ptr<Cartridge>& cartridge);
 

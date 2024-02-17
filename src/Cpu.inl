@@ -139,18 +139,18 @@ inline void Cpu::executeReadModifyWrite(const std::function<void(u8&)> &op)
         auto baseAddress = fetchImmedate16();
         auto index = Mode == AbsoluteIndexedX ? registers.x : registers.y;
         address = baseAddress + index;
-        value = mmu->readFromMemory((baseAddress & 0xFF00) | (address & 0xFF));
+        mmu->readFromMemory((baseAddress & 0xFF00) | (address & 0xFF));
         value = mmu->readFromMemory(address);
     } else if constexpr (isZeroPage(Mode) && isIndexed(Mode)) {
         auto baseAddress = fetchImmedate8();
         auto index = Mode == ZeroPageIndexedX ? registers.x : registers.y;
         address = (baseAddress + index) & 0xFF;
-        value = mmu->readFromMemory(baseAddress);
+        mmu->readFromMemory(baseAddress);
         value = mmu->readFromMemory(address);
     } else if constexpr (Mode == IndirectX) {
         auto pointerAddress = fetchImmedate8();
         auto index = registers.x;
-        address = mmu->readFromMemory(pointerAddress);
+        mmu->readFromMemory(pointerAddress);
         auto effectivePointerAddress = (pointerAddress + index) & 0xFF;
         address = mmu->readFromMemory(effectivePointerAddress) |
             mmu->readFromMemory((effectivePointerAddress + 1) & 0xFF) << 8;
@@ -161,7 +161,7 @@ inline void Cpu::executeReadModifyWrite(const std::function<void(u8&)> &op)
             mmu->readFromMemory((pointerAddress + 1) & 0xFF) << 8;
         auto index = registers.y;
         address = baseAddress + index;
-        value = mmu->readFromMemory(baseAddress);
+        mmu->readFromMemory(baseAddress);
         value = mmu->readFromMemory(address);
     }
     mmu->writeIntoMemory(address, value);
@@ -979,7 +979,7 @@ inline void Cpu::las()
     static_assert(Mode == AddressingMode::AbsoluteIndexedY, "LAS instruction supports only Absolute Indexed Y addressing");
     auto value = resolveReadOperand<Mode>();
     registers.s &= value;
-    registers.x = registers.s = registers.s;
+    registers.x = registers.a = registers.s;
     updateZeroFlag(registers.s);
     updateNegativeFlag(registers.s);
 }

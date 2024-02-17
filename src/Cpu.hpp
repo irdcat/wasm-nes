@@ -11,7 +11,7 @@
 class Cpu
 {
     public:
-        Cpu(const std::shared_ptr<Mmu>& mmu);
+        explicit Cpu(const std::shared_ptr<Mmu>& mmu);
 
         ~Cpu() = default;
 

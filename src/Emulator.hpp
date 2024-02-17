@@ -42,8 +42,6 @@ class Emulator
 
         void render();
 
-        void handleKeyEvent(const SDL_Event& event);
-
         void updateScreen();
 
         static constexpr const unsigned DISPLAY_WIDTH = 256;

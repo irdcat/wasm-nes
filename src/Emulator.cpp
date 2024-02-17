@@ -4,14 +4,14 @@
 #include <iostream>
 
 Emulator::Emulator()
-    : shouldRun(false)
+    : cpu(std::make_shared<Cpu>(mmu))
+    , mmu(std::make_shared<Mmu>(ppu, cartridge))
+    , ppu(std::make_shared<Ppu>(cpu, cartridge, ppuFramebuffer))
+    , cartridge(std::make_shared<Cartridge>())
+    , ppuFramebuffer(std::make_shared<PpuFramebuffer>())
+    , shouldRun(false)
     , initialized(false)
 {
-    ppuFramebuffer = std::make_shared<PpuFramebuffer>();
-    cartridge = std::make_shared<Cartridge>();
-    ppu = std::make_shared<Ppu>(cpu, cartridge, ppuFramebuffer);
-    mmu = std::make_shared<Mmu>(ppu, cartridge);
-    cpu = std::make_shared<Cpu>(mmu);
 }
 
 void Emulator::reset()
@@ -83,9 +83,9 @@ bool Emulator::init(bool doInitialization)
 
 void Emulator::run()
 {
-    u64 currentTime = 0;
+    u64 currentTime;
+    u64 deltaTime;
     u64 lastTime = 0;
-    u64 deltaTime = 0;
     while(shouldRun) {
         currentTime = SDL_GetTicks64();
         deltaTime = currentTime - lastTime;
@@ -104,7 +104,11 @@ void Emulator::handleInput()
     static SDL_Event event;
     while(SDL_PollEvent(&event) != 0) {
         if(event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
-            handleKeyEvent(event);
+            auto key = event.key.keysym.scancode;
+            auto pressed = event.type == SDL_KEYDOWN;
+            // TODO: Handling key events
+        } else if(event.type == SDL_QUIT) {
+            shouldRun = false;
         }
     }
 }
@@ -125,13 +129,6 @@ void Emulator::render()
     SDL_RenderClear(renderer.get());
     SDL_RenderCopy(renderer.get(), texture.get(), nullptr, nullptr);
     SDL_RenderPresent(renderer.get());
-}
-
-void Emulator::handleKeyEvent(const SDL_Event &event)
-{
-    auto key = event.key.keysym.scancode;
-    auto pressed = event.type == SDL_KEYDOWN;
-    // TODO: Handle key events
 }
 
 void Emulator::updateScreen()

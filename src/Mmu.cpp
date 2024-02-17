@@ -1,10 +1,12 @@
 #include "Mmu.hpp"
 
+Mmu::Mmu()
+    : resetSignalled(false)
+{
+}
+
 Mmu::Mmu(const std::shared_ptr<Ppu> &ppu, const std::shared_ptr<Cartridge> &cartridge)
-    : ppu(ppu)
-    , cartridge(cartridge)
-    , internalRam()
-    , resetSignalled(false)
+    : ppu(ppu), cartridge(cartridge), internalRam(), resetSignalled(false)
 {
 }
 
