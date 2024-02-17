@@ -10,7 +10,7 @@ bool Cartridge::loadFromFile(std::ifstream file)
     std::array<u8, 16> headerData;
     file.read(reinterpret_cast<char*>(&headerData[0]), 16);
 
-    if(headerData[0] != 0x4E || headerData[1] != 0x45 || headerData[2] != 0x53 || headerData[3] != 0x1A) {
+    if(std::string(&headerData[0], &headerData[4]) != "NES\x1A") {
         return false;
     }
 
@@ -52,8 +52,8 @@ bool Cartridge::loadFromFile(std::ifstream file)
         file.ignore(512);
     }
 
-    file.read(reinterpret_cast<char*>(&prgRom[0]), prgRom.size());
-    file.read(reinterpret_cast<char*>(&chrRom[0]), chrRom.size());
+    file.read(reinterpret_cast<char*>(prgRom.data()), prgRom.size());
+    file.read(reinterpret_cast<char*>(chrRom.data()), chrRom.size());
 
     return true;
 }
@@ -87,10 +87,10 @@ u8 &Cartridge::memoryRef(u16 addr)
         auto effectiveAddress = nametableAddress + (addr & 0x3FF);
         return chrRam[effectiveAddress];
     } else if (addr >= 0x6000 && addr < 0x8000) {
-        auto prgRamAddr = addr - 0x6000;
+        auto prgRamAddr = (addr - 0x6000) % prgRam.size();
         return prgRam[prgRamAddr];
-    } else if (addr >= 0x8000 && addr < 0xFFFF) {
-        auto prgRomAddr = addr - 0x8000;
+    } else if (addr >= 0x8000) {
+        auto prgRomAddr = (addr - 0x8000) % prgRom.size();
         return prgRom[prgRomAddr]; 
     }
 

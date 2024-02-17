@@ -2,7 +2,7 @@
 #include <string>
 #include "Emulator.hpp"
 
-Emulator emulator;
+EMSCRIPTEN_KEEPALIVE Emulator emulator;
 
 extern "C"
 {

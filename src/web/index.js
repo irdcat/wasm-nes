@@ -9,12 +9,12 @@ function loadRom() {
     fileReader.readAsArrayBuffer(file);
 }
 
-function runRom(e) {
+async function runRom(e) {
     let result = fileReader.result;
     const resultByteArray = new Uint8Array(result);
     const memFsFilename = "rom.nes"
     FS.writeFile(memFsFilename, resultByteArray);
-    Module.ccall('loadRom', null, ['string'], [memFsFilename], {async: true});
+    await Module.ccall('loadRom', null, ['string'], [memFsFilename], {async: true});
 }
 
 /**

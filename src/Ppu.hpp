@@ -29,8 +29,8 @@ class Ppu
 
     private:
         std::weak_ptr<Cpu> cpuWeak;
-        std::weak_ptr<Cartridge> cartridgeWeak;
-        std::weak_ptr<PpuFramebuffer> framebufferWeak;
+        std::shared_ptr<Cartridge> cartridge;
+        std::shared_ptr<PpuFramebuffer> framebuffer;
         PpuRegisters registers;
 
         unsigned openBusDecayTimer;

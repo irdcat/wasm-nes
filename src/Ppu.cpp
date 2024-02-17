@@ -5,8 +5,8 @@ Ppu::Ppu(const std::shared_ptr<Cpu>& cpu,
     const std::shared_ptr<Cartridge>& cartridge, 
     const std::shared_ptr<PpuFramebuffer>& framebuffer)
     : cpuWeak(cpu)
-    , cartridgeWeak(cartridge)
-    , framebufferWeak(framebuffer)
+    , cartridge(cartridge)
+    , framebuffer(framebuffer)
     , openBusDecayTimer(0)
     , openBusContents(0)
     , vramReadBuffer(0)
@@ -191,7 +191,7 @@ void Ppu::renderPixel()
     }
 
     pixel = palette[(attributes * 4 + pixel) & 0x1F] & registers.ppuMask.greyscale ? 0x30 : 0x3F;
-    framebufferWeak.lock()->setColor(renderingPositionX, scanline, pixel);
+    framebuffer->setColor(renderingPositionX, scanline, pixel);
 }
 
 void Ppu::triggerNmi()
@@ -214,7 +214,6 @@ u8 Ppu::ppuRead(u16 addr)
         return palette[addr];
     }
 
-    auto cartridge = cartridgeWeak.lock();
     return cartridge->read(addr);
 }
 
@@ -227,6 +226,5 @@ void Ppu::ppuWrite(u16 addr, u8 value)
         return;
     }
 
-    auto cartridge = cartridgeWeak.lock();
     cartridge->write(addr, value);
 }
