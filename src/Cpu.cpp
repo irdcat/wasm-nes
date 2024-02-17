@@ -8,6 +8,7 @@ Cpu::Cpu(const std::shared_ptr<Mmu> &mmu)
     registers.y = 0;
     registers.p = 0x20;
     registers.s = 0;
+    registers.pc = 0;
     halted = false;
     nmiPending = false;
     irqPending = false;
@@ -345,18 +346,22 @@ void Cpu::handleInterrupt(InterruptType type)
 
     registers.p.interruptDisable = true;
 
+    u16 interruptVectorLocation = 0;
     switch(type) {
-        case InterruptType::BRK:
-        case InterruptType::IRQ:
-            registers.pc = mmu->readFromMemory(0xFFFE) | (mmu->readFromMemory(0xFFFF) << 8);
+        case InterruptType::NMI:
+            interruptVectorLocation = 0xFFFA;
             break;
         case InterruptType::RESET:
-            registers.pc = mmu->readFromMemory(0xFFFC) | (mmu->readFromMemory(0xFFFD) << 8);
+            interruptVectorLocation = 0xFFFC;
             break;
-        case InterruptType::NMI:
-            registers.pc = mmu->readFromMemory(0xFFFA) | (mmu->readFromMemory(0xFFFB) << 8);
+        default: // IRQ and BRK
+            interruptVectorLocation = 0xFFFE;
             break;
     }
+    
+    u16 interruptVector = mmu->readFromMemory(interruptVectorLocation) 
+        | (mmu->readFromMemory(interruptVectorLocation + 1) << 8);
+    registers.pc = interruptVector;
 }
 
 u8 Cpu::fetchImmedate8()

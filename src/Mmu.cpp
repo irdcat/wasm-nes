@@ -1,6 +1,6 @@
 #include "Mmu.hpp"
 
-Mmu::Mmu(const std::shared_ptr<Ppu> &ppu, const std::shared_ptr<Cartridge>& cartridge)
+Mmu::Mmu(const std::shared_ptr<Ppu> &ppu, const std::shared_ptr<Cartridge> &cartridge)
     : ppu(ppu)
     , cartridge(cartridge)
     , internalRam()
