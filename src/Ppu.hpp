@@ -25,7 +25,7 @@ class Ppu
 
         void tick();
 
-        bool isInVblank();
+        bool isInVblank() const;
 
     private:
         std::weak_ptr<Cpu> cpuWeak;
