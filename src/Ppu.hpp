@@ -14,7 +14,8 @@ class Ppu
     public:
         Ppu(const std::shared_ptr<Cartridge>& cartridge,
             const std::shared_ptr<PpuFramebuffer>& framebuffer,
-            const std::function<void()>& nmiTriggerCallback);
+            const std::function<void()>& nmiTriggerCallback,
+            const std::function<void()>& vblankInterruptCallback);
 
         ~Ppu() = default;
 
@@ -23,8 +24,6 @@ class Ppu
         void write(u8 index, u8 data);
 
         void tick();
-
-        bool isInVblank() const;
 
     private:
         std::shared_ptr<Cartridge> cartridge;
@@ -52,11 +51,11 @@ class Ppu
         std::array<u8, 32> palette;
 
         std::function<void()> nmiTriggerCallback;
+        std::function<void()> vblankInterruptCallback;
 
         void renderingTick();
         void renderPixel();
 
-        void triggerNmi();
         void refreshOpenBus(u8 value);
 
         u8 ppuRead(u16 addr);

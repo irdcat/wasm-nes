@@ -10,11 +10,15 @@ Emulator::Emulator()
     cartridge = std::make_shared<Cartridge>();
     ppuFramebuffer = std::make_shared<PpuFramebuffer>();
     
-    auto nmiTriggerCallback = [&](){
+    auto nmiTriggerCallback = [this](){
         cpu->interrupt(InterruptType::NMI);
     };
 
-    ppu = std::make_shared<Ppu>(cartridge, ppuFramebuffer, nmiTriggerCallback);
+    auto vblankInterruptCallback = [this](){
+        updateScreen();
+    };
+
+    ppu = std::make_shared<Ppu>(cartridge, ppuFramebuffer, nmiTriggerCallback, vblankInterruptCallback);
     mmu = std::make_shared<Mmu>(ppu, cartridge);
     cpu = std::make_shared<Cpu>(mmu);
 }
@@ -123,9 +127,6 @@ void Emulator::update(u32 millisElapsed)
     unsigned cyclesToExecute = CPU_CYCLES_PER_SECOND * millisElapsed / 1000;
     while(cyclesToExecute--) {
         cpu->step();
-        if(ppu->isInVblank()) {
-            updateScreen();
-        }
     }
 }
 

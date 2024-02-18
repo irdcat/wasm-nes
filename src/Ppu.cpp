@@ -3,23 +3,28 @@
 
 Ppu::Ppu(const std::shared_ptr<Cartridge>& cartridge, 
     const std::shared_ptr<PpuFramebuffer>& framebuffer,
-    const std::function<void()>& nmiTriggerCallback)
+    const std::function<void()>& nmiTriggerCallback,
+    const std::function<void()>& vblankInterruptCallback)
     : cartridge(cartridge)
     , framebuffer(framebuffer)
+    , registers()
     , openBusDecayTimer(0)
     , openBusContents(0)
     , vramReadBuffer(0)
     , scanline(261)
     , renderingPositionX(0)
     , offsetToggleLatch(false)
-    , registers()
     , patternTableAddress(0)
     , attributeTableAddress(0)
     , tilePattern(0)
     , tileAttributes(0)
     , bgShiftPattern(0)
     , bgShiftAttributes(0)
+    , oam()
+    , oam2()
+    , palette()
     , nmiTriggerCallback(nmiTriggerCallback)
+    , vblankInterruptCallback(vblankInterruptCallback)
 {
 }
 
@@ -52,7 +57,7 @@ void Ppu::write(u8 index, u8 data)
         auto oldVBlankNmi = registers.ppuCtrl.VBlankNmi;
         registers.ppuCtrl = data;
         if(!oldVBlankNmi && registers.ppuCtrl.VBlankNmi && registers.ppuStatus.inVBlank) {
-            triggerNmi();
+            nmiTriggerCallback();
         }
     } else if (index == 1) { // 0x2001 PPUMASK - Ppu mask register
         registers.ppuMask = data;
@@ -102,7 +107,8 @@ void Ppu::tick()
     if(scanline == 241 && renderingPositionX == 1) {
         registers.ppuStatus.inVBlank = 1;
         registers.ppuStatus.spriteZeroHit = 0;
-        triggerNmi();
+        nmiTriggerCallback();
+        vblankInterruptCallback();
     }
 
     if(scanline == 262) {
@@ -117,11 +123,6 @@ void Ppu::tick()
         renderingPositionX = 0;
         scanline++;
     }
-}
-
-bool Ppu::isInVblank() const
-{
-    return registers.ppuStatus.inVBlank;
 }
 
 void Ppu::renderingTick()
@@ -198,11 +199,6 @@ void Ppu::renderPixel()
 
     pixel = palette[(attributes * 4 + pixel) & 0x1F] & (registers.ppuMask.greyscale ? 0x30 : 0x3F);
     framebuffer->setColor(renderingPositionX, scanline, pixel);
-}
-
-void Ppu::triggerNmi()
-{
-    nmiTriggerCallback();
 }
 
 void Ppu::refreshOpenBus(u8 value)
