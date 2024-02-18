@@ -4,14 +4,19 @@
 #include <iostream>
 
 Emulator::Emulator()
-    : cpu(std::make_shared<Cpu>(mmu))
-    , mmu(std::make_shared<Mmu>(ppu, cartridge))
-    , ppu(std::make_shared<Ppu>(cpu, cartridge, ppuFramebuffer))
-    , cartridge(std::make_shared<Cartridge>())
-    , ppuFramebuffer(std::make_shared<PpuFramebuffer>())
-    , shouldRun(false)
+    : shouldRun(false)
     , initialized(false)
 {
+    cartridge = std::make_shared<Cartridge>();
+    ppuFramebuffer = std::make_shared<PpuFramebuffer>();
+    
+    auto nmiTriggerCallback = [&](){
+        cpu->interrupt(InterruptType::NMI);
+    };
+
+    ppu = std::make_shared<Ppu>(cartridge, ppuFramebuffer, nmiTriggerCallback);
+    mmu = std::make_shared<Mmu>(ppu, cartridge);
+    cpu = std::make_shared<Cpu>(mmu);
 }
 
 void Emulator::reset()

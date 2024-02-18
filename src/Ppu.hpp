@@ -2,20 +2,19 @@
 
 #include <memory>
 #include <array>
+#include <functional>
 
 #include "Oam.hpp"
 #include "Cartridge.hpp"
 #include "PpuRegisters.hpp"
 #include "PpuFramebuffer.hpp"
 
-class Cpu;
-
 class Ppu
 {
     public:
-        Ppu(const std::shared_ptr<Cpu>& cpu, 
-            const std::shared_ptr<Cartridge>& cartridge,
-            const std::shared_ptr<PpuFramebuffer>& framebuffer);
+        Ppu(const std::shared_ptr<Cartridge>& cartridge,
+            const std::shared_ptr<PpuFramebuffer>& framebuffer,
+            const std::function<void()>& nmiTriggerCallback);
 
         ~Ppu() = default;
 
@@ -28,7 +27,6 @@ class Ppu
         bool isInVblank() const;
 
     private:
-        std::weak_ptr<Cpu> cpuWeak;
         std::shared_ptr<Cartridge> cartridge;
         std::shared_ptr<PpuFramebuffer> framebuffer;
         PpuRegisters registers;
@@ -52,6 +50,8 @@ class Ppu
         Oam<64> oam;
         Oam<8> oam2;
         std::array<u8, 32> palette;
+
+        std::function<void()> nmiTriggerCallback;
 
         void renderingTick();
         void renderPixel();
