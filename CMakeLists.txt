@@ -10,12 +10,11 @@ if(EMSCRIPTEN)
         src/Emulator.cpp
         src/PpuFramebuffer.cpp
         src/SdlColor.cpp
-        src/api.cpp)
+        src/main.cpp)
     set(CMAKE_EXECUTABLE_SUFFIX ".js")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -g -O0")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sWASM=1 -sALLOW_MEMORY_GROWTH=1 -sUSE_SDL=2 -sASYNCIFY")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sEXPORTED_FUNCTIONS=_loadRom -sEXPORTED_RUNTIME_METHODS=ccall")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sFORCE_FILESYSTEM=1 -sWASM_BIGINT")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sWASM=1 -sALLOW_MEMORY_GROWTH=1 -sUSE_SDL=2 -sFORCE_FILESYSTEM=1")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sEXPORTED_FUNCTIONS=[_main,_loadRom] -sEXPORTED_RUNTIME_METHODS=ccall")
     
     add_executable(wasm-nes ${APP_SOURCES})
 endif()

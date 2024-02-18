@@ -18,6 +18,14 @@ class Emulator
 
         void loadRom(const std::string& filename);
 
+        void handleInput();
+
+        void update(u32 millisElapsed);
+
+        void render();
+
+        bool shouldBeRunning() const;
+
     private:
         std::shared_ptr<Cpu> cpu;
         std::shared_ptr<Mmu> mmu;
@@ -33,14 +41,6 @@ class Emulator
         SdlResource<SDL_Renderer> renderer;
 
         bool init(bool doInitialization);
-
-        void run();
-
-        void handleInput();
-
-        void update(u32 millisElapsed);
-
-        void render();
 
         void updateScreen();
 

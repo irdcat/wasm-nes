@@ -33,7 +33,40 @@ void Emulator::loadRom(const std::string &filename)
     auto file = std::ifstream(filename, std::ios::binary);
     shouldRun = init(!initialized) && cartridge->loadFromFile(std::move(file));
     reset();
-    run();
+}
+
+void Emulator::handleInput()
+{
+    static SDL_Event event;
+    while(SDL_PollEvent(&event) != 0) {
+        if(event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
+            auto key = event.key.keysym.scancode;
+            auto pressed = event.type == SDL_KEYDOWN;
+            // TODO: Handling key events
+        } else if(event.type == SDL_QUIT) {
+            shouldRun = false;
+        }
+    }
+}
+
+void Emulator::update(u32 millisElapsed)
+{
+    unsigned cyclesToExecute = CPU_CYCLES_PER_SECOND * millisElapsed / 1000;
+    while(cyclesToExecute--) {
+        cpu->step();
+    }
+}
+
+void Emulator::render()
+{
+    SDL_RenderClear(renderer.get());
+    SDL_RenderCopy(renderer.get(), texture.get(), nullptr, nullptr);
+    SDL_RenderPresent(renderer.get());
+}
+
+bool Emulator::shouldBeRunning() const
+{
+    return shouldRun;
 }
 
 bool Emulator::init(bool doInitialization)
@@ -88,53 +121,6 @@ bool Emulator::init(bool doInitialization)
 
     initialized = true;
     return initialized;
-}
-
-void Emulator::run()
-{
-    u64 currentTime;
-    u64 deltaTime;
-    u64 lastTime = 0;
-    while(shouldRun) {
-        currentTime = SDL_GetTicks64();
-        deltaTime = currentTime - lastTime;
-
-        handleInput();
-        update(deltaTime);
-        render();
-
-        emscripten_sleep(16 - currentTime);
-        lastTime = currentTime;
-    }
-}
-
-void Emulator::handleInput()
-{
-    static SDL_Event event;
-    while(SDL_PollEvent(&event) != 0) {
-        if(event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
-            auto key = event.key.keysym.scancode;
-            auto pressed = event.type == SDL_KEYDOWN;
-            // TODO: Handling key events
-        } else if(event.type == SDL_QUIT) {
-            shouldRun = false;
-        }
-    }
-}
-
-void Emulator::update(u32 millisElapsed)
-{
-    unsigned cyclesToExecute = CPU_CYCLES_PER_SECOND * millisElapsed / 1000;
-    while(cyclesToExecute--) {
-        cpu->step();
-    }
-}
-
-void Emulator::render()
-{
-    SDL_RenderClear(renderer.get());
-    SDL_RenderCopy(renderer.get(), texture.get(), nullptr, nullptr);
-    SDL_RenderPresent(renderer.get());
 }
 
 void Emulator::updateScreen()
