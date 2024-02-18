@@ -14,7 +14,7 @@ async function runRom(e) {
     const resultByteArray = new Uint8Array(result);
     const memFsFilename = "rom.nes"
     FS.writeFile(memFsFilename, resultByteArray);
-    await Module.ccall('loadRom', null, ['string'], [memFsFilename], {async: true});
+    Module.ccall('loadRom', null, ['string'], [memFsFilename]);
 }
 
 /**
