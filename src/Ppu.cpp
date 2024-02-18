@@ -1,11 +1,10 @@
 #include "Ppu.hpp"
 #include "Cpu.hpp"
 
-Ppu::Ppu(const std::shared_ptr<Cpu>& cpu, 
-    const std::shared_ptr<Cartridge>& cartridge, 
-    const std::shared_ptr<PpuFramebuffer>& framebuffer)
-    : cpuWeak(cpu)
-    , cartridge(cartridge)
+Ppu::Ppu(const std::shared_ptr<Cartridge>& cartridge, 
+    const std::shared_ptr<PpuFramebuffer>& framebuffer,
+    const std::function<void()>& nmiTriggerCallback)
+    : cartridge(cartridge)
     , framebuffer(framebuffer)
     , openBusDecayTimer(0)
     , openBusContents(0)
@@ -20,6 +19,7 @@ Ppu::Ppu(const std::shared_ptr<Cpu>& cpu,
     , tileAttributes(0)
     , bgShiftPattern(0)
     , bgShiftAttributes(0)
+    , nmiTriggerCallback(nmiTriggerCallback)
 {
 }
 
@@ -202,8 +202,7 @@ void Ppu::renderPixel()
 
 void Ppu::triggerNmi()
 {
-    auto cpu = cpuWeak.lock();
-    cpu->interrupt(InterruptType::NMI);
+    nmiTriggerCallback();
 }
 
 void Ppu::refreshOpenBus(u8 value)

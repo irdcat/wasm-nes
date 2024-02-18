@@ -7,8 +7,7 @@
 template<typename Creator, typename Destructor, typename... Args>
 auto make_sdl_resource(Creator creator, Destructor destructor, Args&&... args)
 {
-    // cppcheck-suppress redundantInitialization
-    auto resource = creator.operator(std::forward<Args>(args)...);
+    auto resource = creator(std::forward<Args>(args)...);
     if(!resource) {
         return std::unique_ptr<std::decay_t<decltype(*resource)>, decltype(destructor)>(nullptr, destructor);
     }
@@ -18,8 +17,7 @@ auto make_sdl_resource(Creator creator, Destructor destructor, Args&&... args)
 template<typename Creator, typename Destructor, typename Arg>
 auto make_sdl_resource(Creator creator, Destructor destructor, Arg arg) 
 {
-    // cppcheck-suppress redundantInitialization
-    auto resource = creator.operator(std::forward<Arg>(arg));
+    auto resource = creator(std::forward<Arg>(arg));
     if(!resource) {
         return std::unique_ptr<std::decay_t<decltype(*resource)>, decltype(destructor)>(nullptr, destructor);
     }

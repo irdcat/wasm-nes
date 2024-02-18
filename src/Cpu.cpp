@@ -325,7 +325,6 @@ void Cpu::interrupt(InterruptType type)
     }
 }
 
-// cppcheck-suppress unusedFunction
 CpuRegisters &Cpu::getRegisters()
 {
     return registers;
