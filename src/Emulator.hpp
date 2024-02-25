@@ -34,13 +34,10 @@ class Emulator
         std::shared_ptr<PpuFramebuffer> ppuFramebuffer;
 
         bool shouldRun;
-        bool initialized;
 
         SdlResource<SDL_Texture> texture;
         SdlResource<SDL_Window> window;
         SdlResource<SDL_Renderer> renderer;
-
-        bool init(bool doInitialization);
 
         void updateScreen();
 
