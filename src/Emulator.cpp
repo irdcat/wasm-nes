@@ -5,7 +5,6 @@
 
 Emulator::Emulator()
     : shouldRun(false)
-    , initialized(false)
 {
     cartridge = std::make_shared<Cartridge>();
     ppuFramebuffer = std::make_shared<PpuFramebuffer>();
@@ -21,6 +20,49 @@ Emulator::Emulator()
     ppu = std::make_shared<Ppu>(cartridge, ppuFramebuffer, nmiTriggerCallback, vblankInterruptCallback);
     mmu = std::make_shared<Mmu>(ppu, cartridge);
     cpu = std::make_shared<Cpu>(mmu);
+
+    window = make_sdl_resource(
+        SDL_CreateWindow, 
+        SDL_DestroyWindow, 
+        "Wasm-NES",
+        SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED,
+        DISPLAY_WIDTH * PIXEL_SIZE,
+        DISPLAY_HEIGHT * PIXEL_SIZE,
+        SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+
+    if(!window) {
+        std::cerr << "Failed to initialize SDL Window" << std::endl;
+        return;
+    }
+
+    renderer = make_sdl_resource(
+        SDL_CreateRenderer,
+        SDL_DestroyRenderer,
+        window.get(),
+        -1,
+        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+
+    if(!renderer) {
+        std::cerr << "Failed to initialize SDL Renderer" << std::endl;
+        return;
+    }
+
+    SDL_RenderSetLogicalSize(renderer.get(), DISPLAY_WIDTH, DISPLAY_HEIGHT);
+
+    texture = make_sdl_resource(
+        SDL_CreateTexture,
+        SDL_DestroyTexture,
+        renderer.get(),
+        SDL_PIXELFORMAT_RGBA32,
+        SDL_TEXTUREACCESS_STREAMING,
+        DISPLAY_WIDTH,
+        DISPLAY_HEIGHT);
+
+    if(!texture) {
+        std::cerr << "Failed to initialize SDL Texture" << std::endl;
+        return;
+    }
 }
 
 void Emulator::reset()
@@ -31,7 +73,7 @@ void Emulator::reset()
 void Emulator::loadRom(const std::string &filename)
 {
     auto file = std::ifstream(filename, std::ios::binary);
-    shouldRun = init(!initialized) && cartridge->loadFromFile(std::move(file));
+    shouldRun = cartridge->loadFromFile(std::move(file));
     reset();
 }
 
@@ -66,61 +108,7 @@ void Emulator::render()
 
 bool Emulator::shouldBeRunning() const
 {
-    return shouldRun;
-}
-
-bool Emulator::init(bool doInitialization)
-{
-    if(!doInitialization) {
-        return initialized;
-    }
-
-    if(SDL_Init(SDL_INIT_VIDEO) != 0) {
-        return false;
-    }
-    
-    window = make_sdl_resource(
-        SDL_CreateWindow, 
-        SDL_DestroyWindow, 
-        "Wasm-NES",
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
-        DISPLAY_WIDTH * PIXEL_SIZE,
-        DISPLAY_HEIGHT * PIXEL_SIZE,
-        SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-
-    if(!window) {
-        return false;
-    }
-
-    renderer = make_sdl_resource(
-        SDL_CreateRenderer,
-        SDL_DestroyRenderer,
-        window.get(),
-        -1,
-        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-
-    if(!renderer) {
-        return false;
-    }
-
-    SDL_RenderSetLogicalSize(renderer.get(), DISPLAY_WIDTH, DISPLAY_HEIGHT);
-
-    texture = make_sdl_resource(
-        SDL_CreateTexture,
-        SDL_DestroyTexture,
-        renderer.get(),
-        SDL_PIXELFORMAT_RGBA32,
-        SDL_TEXTUREACCESS_STREAMING,
-        DISPLAY_WIDTH,
-        DISPLAY_HEIGHT);
-
-    if(!texture) {
-        return false;
-    }
-
-    initialized = true;
-    return initialized;
+    return shouldRun && window && renderer && texture;
 }
 
 void Emulator::updateScreen()
