@@ -111,7 +111,7 @@ class NesTestCpuTest : public Test
         {
         }
 
-        void setUp() override
+        bool setUp() override
         {
             testMmu->clearMemory();
             auto romStream = std::ifstream("nestest.nes", std::ios::binary);
@@ -120,7 +120,7 @@ class NesTestCpuTest : public Test
             if(!romStream.is_open())
             {
                 std::cout << "Unable to open file nestest.nes" << std::endl;
-                romStream.exceptions(romStream.failbit);
+                return false;
             }
 
             romStream.seekg(0, std::ios::end);
@@ -134,6 +134,7 @@ class NesTestCpuTest : public Test
             cpu->getRegisters().s = 0;
             cpu->reset();
             cpu->getRegisters().pc = NES_TEST_START_ADDR;
+            return true;
         }
 
         int run()
