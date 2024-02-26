@@ -7,7 +7,7 @@ class Test
     public:
         virtual ~Test() = default;
 
-        virtual void setUp() {};
+        virtual bool setUp() { return true; };
 
         virtual int run() = 0;
 

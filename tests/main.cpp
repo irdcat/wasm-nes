@@ -1,6 +1,9 @@
 #include "Test.hpp"
 
 #include "NesTestCpuTest.hpp"
+#include "PpuVblankNmiTest.hpp"
+#include "PpuOpenBusTest.hpp"
+#include "PpuReadBufferTest.hpp"
 
 class TestExecutor
 {
@@ -17,7 +20,10 @@ class TestExecutor
             for(auto& test : tests) {
                 auto testName = test->name();
                 std::cout << "Setting up " << testName << "\t";
-                test->setUp();
+                if(!test->setUp()) {
+                    std::cout << "Failed" << std::endl;
+                    continue;
+                }
                 std::cout << "Done" << std::endl;
                 std::cout << "Running " << testName << "\t";
                 auto testResult = test->run();
@@ -36,6 +42,9 @@ int main()
     TestExecutor testExecutor;
 
     testExecutor.registerTest(std::make_unique<NesTestCpuTest>());
+    testExecutor.registerTest(std::make_unique<PpuVblankNmiTest>());
+    testExecutor.registerTest(std::make_unique<PpuOpenBusTest>());
+    testExecutor.registerTest(std::make_unique<PpuReadBufferTest>());
 
     return testExecutor.runAll();
 }
