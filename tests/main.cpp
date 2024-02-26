@@ -1,3 +1,6 @@
+#include <iostream>
+#include <iomanip>
+
 #include "Test.hpp"
 
 #include "NesTestCpuTest.hpp"
@@ -20,22 +23,36 @@ class TestExecutor
         int runAll()
         {
             int result = 0;
-            std::cout << "Running tests" << std::endl;
+            
+            std::cout << "Running tests:\n" << std::endl;
+            std::cout << "|" << std::left << std::setw(20) << std::setfill(' ') << "Test name";
+            std::cout << "|" << std::left << std::setw(15) << std::setfill(' ') << "Set up";
+            std::cout << "|" << std::left << std::setw(30) << std::setfill(' ') << "Run";
+            std::cout << "|" << std::endl;
+            
+            for(auto i = 0; i < 69; i++) {
+                std::cout << '-';
+            }
+            std::cout << std::endl;
+
             for(auto& test : tests) {
                 auto testName = test->name();
-                std::cout << "Setting up " << testName << "\t";
-                if(!test->setUp()) {
-                    std::cout << "Failed" << std::endl;
-                    continue;
-                }
-                std::cout << "Done" << std::endl;
-                std::cout << "Running " << testName << "\t";
-                auto testResult = test->run();
+                auto testResult = -1;
+                
+                std::cout << "|" << std::left << std::setw(20) << std::setfill(' ') << testName;
+                
+                bool hasSetUp = test->setUp();
+                std::cout << "|" << std::left << std::setw(15) << std::setfill(' ') << (hasSetUp ? "Done" : "Failed");
+
+                testResult = test->run();
+                std::stringstream ss;
                 if(testResult == 0) {
-                    std::cout << "Passed" << std::endl;
+                    ss << "Passed";
                 } else {
-                    std::cout << "Failed (Code: " << testResult << ')' << std::endl;
+                    ss << "Failed (Code: " << testResult << ')';
                 }
+                std::cout << "|" << std::left << std::setw(30) << std::setfill(' ') << ss.str();
+                std::cout << "|" << std::endl;
                 result |= testResult;
             }
             return result;
