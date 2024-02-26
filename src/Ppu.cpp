@@ -94,8 +94,7 @@ void Ppu::tick()
         }
     }
 
-    if(scanline < 240 || scanline == 261)
-    {
+    if(scanline < 240 || scanline == 261) {
         if(registers.ppuMask.showBgSp) {
             renderingTick();
         }
@@ -119,7 +118,6 @@ void Ppu::tick()
 
     renderingPositionX++;
     if(renderingPositionX >= 341) {
-        
         renderingPositionX = 0;
         scanline++;
     }
