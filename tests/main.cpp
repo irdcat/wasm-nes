@@ -4,6 +4,10 @@
 #include "PpuVblankNmiTest.hpp"
 #include "PpuOpenBusTest.hpp"
 #include "PpuReadBufferTest.hpp"
+#include "PaletteRamTest.hpp"
+#include "SpriteRamTest.hpp"
+#include "VblClearTimeTest.hpp"
+#include "VramAccessTest.hpp"
 
 class TestExecutor
 {
@@ -27,7 +31,11 @@ class TestExecutor
                 std::cout << "Done" << std::endl;
                 std::cout << "Running " << testName << "\t";
                 auto testResult = test->run();
-                std::cout << (testResult == 0 ? "Passed" : "Failed") << std::endl;
+                if(testResult == 0) {
+                    std::cout << "Passed" << std::endl;
+                } else {
+                    std::cout << "Failed (Code: " << testResult << ')' << std::endl;
+                }
                 result |= testResult;
             }
             return result;
@@ -45,6 +53,10 @@ int main()
     testExecutor.registerTest(std::make_unique<PpuVblankNmiTest>());
     testExecutor.registerTest(std::make_unique<PpuOpenBusTest>());
     testExecutor.registerTest(std::make_unique<PpuReadBufferTest>());
+    testExecutor.registerTest(std::make_unique<PaletteRamTest>());
+    testExecutor.registerTest(std::make_unique<SpriteRamTest>());
+    testExecutor.registerTest(std::make_unique<VblClearTimeTest>());
+    testExecutor.registerTest(std::make_unique<VramAccessTest>());
 
     return testExecutor.runAll();
 }
