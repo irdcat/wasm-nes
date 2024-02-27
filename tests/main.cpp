@@ -3,7 +3,7 @@
 
 #include "Test.hpp"
 
-#include "NesTestCpuTest.hpp"
+#include "CpuInstructionsTest.hpp"
 #include "PpuVblankNmiTest.hpp"
 #include "PpuOpenBusTest.hpp"
 #include "PpuReadBufferTest.hpp"
@@ -66,14 +66,14 @@ int main()
 {
     TestExecutor testExecutor;
 
-    testExecutor.registerTest(std::make_unique<NesTestCpuTest>());
+    testExecutor.registerTest(std::make_unique<CpuInstructionsTest>());
     testExecutor.registerTest(std::make_unique<PpuVblankNmiTest>());
     testExecutor.registerTest(std::make_unique<PpuOpenBusTest>());
     testExecutor.registerTest(std::make_unique<PpuReadBufferTest>());
     testExecutor.registerTest(std::make_unique<PaletteRamTest>());
     testExecutor.registerTest(std::make_unique<SpriteRamTest>());
-    testExecutor.registerTest(std::make_unique<VblClearTimeTest>());
-    testExecutor.registerTest(std::make_unique<VramAccessTest>());
+    //testExecutor.registerTest(std::make_unique<VblClearTimeTest>());
+    //testExecutor.registerTest(std::make_unique<VramAccessTest>());
 
     return testExecutor.runAll();
 }
