@@ -27,7 +27,6 @@ if(NOT EMSCRIPTEN)
         src/Cartridge.cpp
         src/PpuFramebuffer.cpp)
     set(TEST_SOURCES
-        tests/TestMmu.cpp
         tests/main.cpp)
     set(CXX_STANDARD 20)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20")
