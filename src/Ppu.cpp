@@ -110,16 +110,16 @@ void Ppu::tick()
         vblankInterruptCallback();
     }
 
-    if(scanline == 262) {
-        scanline = 0;
-        registers.ppuStatus.spriteZeroHit = 0;
-        registers.ppuStatus.inVBlank = 0;
-    }
-
     renderingPositionX++;
     if(renderingPositionX >= 341) {
         renderingPositionX = 0;
         scanline++;
+    }
+
+    if(scanline == 262) {
+        scanline = 0;
+        registers.ppuStatus.spriteZeroHit = 0;
+        registers.ppuStatus.inVBlank = 0;
     }
 }
 
