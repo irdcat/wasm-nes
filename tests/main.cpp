@@ -2,8 +2,10 @@
 #include "PpuVblankNmiTest.hpp"
 #include "PpuOpenBusTest.hpp"
 #include "PpuReadBufferTest.hpp"
-#include "PaletteRamTest.hpp"
-#include "SpriteRamTest.hpp"
+#include "PpuPaletteRamTest.hpp"
+#include "PpuSpriteRamTest.hpp"
+#include "PpuDataAccessTest.hpp"
+#include "PpuVramAccessTest.hpp"
 
 #include "util/TestExecutor.hpp"
 
@@ -15,8 +17,10 @@ int main()
     testExecutor.registerIntegrationTest<PpuVblankNmiTest>();
     testExecutor.registerIntegrationTest<PpuOpenBusTest>();
     testExecutor.registerIntegrationTest<PpuReadBufferTest>();
-    testExecutor.registerIntegrationTest<PaletteRamTest>();
-    testExecutor.registerIntegrationTest<SpriteRamTest>();
+    testExecutor.registerIntegrationTest<PpuPaletteRamTest>();
+    testExecutor.registerIntegrationTest<PpuSpriteRamTest>();
+    testExecutor.registerIntegrationTest<PpuDataAccessTest>();
+    testExecutor.registerIntegrationTest<PpuVramAccessTest>();
 
     return testExecutor.runAll();
 }
