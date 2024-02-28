@@ -2,13 +2,13 @@
 
 #include "util/IntegrationTest.hpp"
 
-class SpriteRamTest : public IntegrationTest
+class PpuPaletteRamTest : public IntegrationTest
 {
     public:
-        ~SpriteRamTest() = default;
+        ~PpuPaletteRamTest() = default;
 
-        SpriteRamTest(const std::shared_ptr<SystemUnderTest>& sut)
-            : IntegrationTest("SpriteRamTest", sut)
+        PpuPaletteRamTest(const std::shared_ptr<SystemUnderTest>& sut)
+            : IntegrationTest("PpuPaletteRamTest", sut)
         {
         }
 
@@ -16,7 +16,7 @@ class SpriteRamTest : public IntegrationTest
         {
             auto cartridge = getSystemUnderTest()->getCartridge();
             auto cpu = getSystemUnderTest()->getCpu();
-            if(cartridge->loadFromFile(std::ifstream("sprite_ram.nes", std::ios::binary))) {
+            if(cartridge->loadFromFile(std::ifstream("palette_ram.nes", std::ios::binary))) {
                 cpu->reset();
                 return true;
             }

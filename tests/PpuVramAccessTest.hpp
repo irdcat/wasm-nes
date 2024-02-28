@@ -2,13 +2,13 @@
 
 #include "util/IntegrationTest.hpp"
 
-class PaletteRamTest : public IntegrationTest
+class PpuVramAccessTest : public IntegrationTest
 {
     public:
-        ~PaletteRamTest() = default;
+        ~PpuVramAccessTest() = default;
 
-        PaletteRamTest(const std::shared_ptr<SystemUnderTest>& sut)
-            : IntegrationTest("PaletteRamTest", sut)
+        PpuVramAccessTest(const std::shared_ptr<SystemUnderTest>& sut)
+            : IntegrationTest("PpuVramAccessTest", sut)
         {
         }
 
@@ -16,7 +16,7 @@ class PaletteRamTest : public IntegrationTest
         {
             auto cartridge = getSystemUnderTest()->getCartridge();
             auto cpu = getSystemUnderTest()->getCpu();
-            if(cartridge->loadFromFile(std::ifstream("palette_ram.nes", std::ios::binary))) {
+            if(cartridge->loadFromFile(std::ifstream("vram_access.nes", std::ios::binary))) {
                 cpu->reset();
                 return true;
             }

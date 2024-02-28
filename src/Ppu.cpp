@@ -39,11 +39,14 @@ u8 Ppu::read(u8 index)
         result = oam.raw[registers.oamAddr];
         refreshOpenBus(result);
     } else if (index == 7) { // 0x2007 PPUDATA - Ppu data register
+        result = vramReadBuffer;
         auto ppuData = ppuRead(registers.ppuAddr);
         if((registers.ppuAddr & 0x3F00) == 0x3F00) {
             result = (openBusContents & 0xC0) | (ppuData & 0x3F);
+            vramReadBuffer = ppuRead(0x2F00 | registers.ppuAddr & 0xFF);
+        } else {
+            vramReadBuffer = ppuData;
         }
-        vramReadBuffer = ppuData;
         refreshOpenBus(result);
         registers.ppuAddr = registers.ppuAddr + (registers.ppuCtrl.vramAddressIncrement ? 32 : 1);
     }
@@ -81,6 +84,7 @@ void Ppu::write(u8 index, u8 data)
         offsetToggleLatch = !offsetToggleLatch;
     } else if (index == 7) { // 0x2007 PPUDATA - Ppu data register
         ppuWrite(registers.ppuAddr, data);
+        refreshOpenBus(data);
         registers.ppuAddr = registers.ppuAddr + (registers.ppuCtrl.vramAddressIncrement ? 32 : 1);
     }
 }
