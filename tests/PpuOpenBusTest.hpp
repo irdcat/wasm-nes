@@ -1,28 +1,21 @@
 #pragma once
 
-#include "../src/Cpu.hpp"
-#include "../src/Ppu.hpp"
-#include "../src/Mmu.hpp"
-#include "../src/Cartridge.hpp"
-#include "../src/PpuFramebuffer.hpp"
-#include "Test.hpp"
+#include "util/IntegrationTest.hpp"
 
-class PpuOpenBusTest : public Test
+class PpuOpenBusTest : public IntegrationTest
 {
     public:
         ~PpuOpenBusTest() = default;
 
-        PpuOpenBusTest()
-            : ppuFramebuffer(std::make_shared<PpuFramebuffer>())
-            , cartridge(std::make_shared<Cartridge>())
-            , ppu(std::make_shared<Ppu>(cartridge, ppuFramebuffer, [&](){ cpu->interrupt(InterruptType::NMI); }, [](){}))
-            , mmu(std::make_shared<Mmu>(ppu, cartridge))
-            , cpu(std::make_shared<Cpu>(mmu))
+        PpuOpenBusTest(const std::shared_ptr<SystemUnderTest>& sut)
+            : IntegrationTest("PpuOpenBusTest", sut)
         {
         }
 
         bool setUp() override
         {
+            auto cartridge = getSystemUnderTest()->getCartridge();
+            auto cpu = getSystemUnderTest()->getCpu();
             if(cartridge->loadFromFile(std::ifstream("ppu_open_bus.nes", std::ios::binary))) {
                 cpu->reset();
                 return true;
@@ -32,6 +25,8 @@ class PpuOpenBusTest : public Test
 
         int run() override
         {
+            auto cartridge = getSystemUnderTest()->getCartridge();
+            auto cpu = getSystemUnderTest()->getCpu();
             auto resetTriggerTimer = -1;
             auto code = 0x80u;
             while(true) {
@@ -52,16 +47,4 @@ class PpuOpenBusTest : public Test
             }
             return code;
         }
-
-        std::string name() override
-        {
-            return std::string("PpuOpenBusTest");
-        }
-
-    private:
-        std::shared_ptr<PpuFramebuffer> ppuFramebuffer;
-        std::shared_ptr<Cartridge> cartridge;
-        std::shared_ptr<Ppu> ppu;
-        std::shared_ptr<Mmu> mmu;
-        std::shared_ptr<Cpu> cpu;
 };

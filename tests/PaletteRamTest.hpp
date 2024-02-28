@@ -1,28 +1,21 @@
 #pragma once
 
-#include "../src/Cpu.hpp"
-#include "../src/Ppu.hpp"
-#include "../src/Mmu.hpp"
-#include "../src/Cartridge.hpp"
-#include "../src/PpuFramebuffer.hpp"
-#include "Test.hpp"
+#include "util/IntegrationTest.hpp"
 
-class PaletteRamTest : public Test
+class PaletteRamTest : public IntegrationTest
 {
     public:
         ~PaletteRamTest() = default;
 
-        PaletteRamTest()
-            : ppuFramebuffer(std::make_shared<PpuFramebuffer>())
-            , cartridge(std::make_shared<Cartridge>())
-            , ppu(std::make_shared<Ppu>(cartridge, ppuFramebuffer, [&](){ cpu->interrupt(InterruptType::NMI); }, [](){}))
-            , mmu(std::make_shared<Mmu>(ppu, cartridge))
-            , cpu(std::make_shared<Cpu>(mmu))
+        PaletteRamTest(const std::shared_ptr<SystemUnderTest>& sut)
+            : IntegrationTest("PaletteRamTest", sut)
         {
         }
 
         bool setUp() override
         {
+            auto cartridge = getSystemUnderTest()->getCartridge();
+            auto cpu = getSystemUnderTest()->getCpu();
             if(cartridge->loadFromFile(std::ifstream("palette_ram.nes", std::ios::binary))) {
                 cpu->reset();
                 return true;
@@ -32,6 +25,8 @@ class PaletteRamTest : public Test
 
         int run() override
         {
+            auto cpu = getSystemUnderTest()->getCpu();
+            auto mmu = getSystemUnderTest()->getMmu();
             auto code = 0xFF;
             while(true) {
                 cpu->step();
@@ -42,16 +37,4 @@ class PaletteRamTest : public Test
             }
             return code == 1 ? 0 : code;
         }
-
-        std::string name() override
-        {
-            return std::string("PaletteRamTest");
-        }
-
-    private:
-        std::shared_ptr<PpuFramebuffer> ppuFramebuffer;
-        std::shared_ptr<Cartridge> cartridge;
-        std::shared_ptr<Ppu> ppu;
-        std::shared_ptr<Mmu> mmu;
-        std::shared_ptr<Cpu> cpu;
 };
