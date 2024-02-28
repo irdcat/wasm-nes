@@ -5,11 +5,16 @@
 class Test
 {
     public:
+        explicit Test(const std::string& name);
+
         virtual ~Test() = default;
 
         virtual bool setUp() { return true; };
 
         virtual int run() = 0;
 
-        virtual std::string name() = 0;
+        std::string getName();
+    
+    private:
+        std::string name;
 };
