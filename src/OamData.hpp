@@ -20,4 +20,6 @@ struct OamData
         RegisterBit<7> verticalFlip;
     } attributes;
     u8 positionX;
+    u8 spriteIndex;
+    u16 pattern;
 };

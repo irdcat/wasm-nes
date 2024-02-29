@@ -23,6 +23,10 @@ Ppu::Ppu(const std::shared_ptr<Cartridge>& cartridge,
     , oam()
     , oam2()
     , palette()
+    , oamTempData(0)
+    , spritePrimaryOamPosition(0)
+    , spriteSecondaryOamPosition(0)
+    , spriteRenderingPosition(0)
     , nmiTriggerCallback(nmiTriggerCallback)
     , vblankInterruptCallback(vblankInterruptCallback)
 {
@@ -36,7 +40,7 @@ u8 Ppu::read(u8 index)
         registers.ppuStatus.inVBlank = false;
         offsetToggleLatch = false;
     } else if (index == 4) { // 0x2004 OAMDATA - OAM data port
-        result = oam.raw[registers.oamAddr];
+        result = oam[registers.oamAddr];
         refreshOpenBus(result);
     } else if (index == 7) { // 0x2007 PPUDATA - Ppu data register
         result = vramReadBuffer;
@@ -67,7 +71,7 @@ void Ppu::write(u8 index, u8 data)
     } else if (index == 3) { // 0x2003 OAMADDR - OAM address port
         registers.oamAddr = data;
     } else if (index == 4) { // 0x2004 OAMDATA - OAM data port
-        oam.raw[registers.oamAddr++] = data;
+        oam[registers.oamAddr++] = data;
     } else if (index == 5) { // 0x2005 PPUSCROLL - Ppu scrolling position register (X Scroll on first write, Y Scroll on second write)
         if(offsetToggleLatch) {
             registers.ppuScroll.y = data;
@@ -168,6 +172,16 @@ void Ppu::renderingTick()
         case 3: // Attribute table access
             if(shouldDecodeTile) {
                 tileAttributes = ppuRead(attributeTableAddress) & 3;
+            } else if (spriteRenderingPosition < spriteSecondaryOamPosition) {
+                auto& currentSprite = oam3[spriteRenderingPosition];
+                currentSprite = oam2[spriteRenderingPosition];
+                unsigned y = scanline - currentSprite.positionY;
+                if(currentSprite.attributes.verticalFlip) {
+                    y ^= (registers.ppuCtrl.spriteSize ? 15 : 7);
+                }
+                patternTableAddress = 0x1000 * (registers.ppuCtrl.spriteSize ? currentSprite.tileIndexNumber.bank : registers.ppuCtrl.spritePatternTableAddress);
+                patternTableAddress += 0x10 * (registers.ppuCtrl.spriteSize ? currentSprite.tileIndexNumber.tileNumber : currentSprite.tileIndexNumber.raw);
+                patternTableAddress += (y & 7) + (y & 8) * 2;
             }
             break;
 
@@ -177,9 +191,70 @@ void Ppu::renderingTick()
 
         case 7: // Background MSB
             tilePattern = interleave(tilePattern, (ppuRead(patternTableAddress | 8) << 8));
+            if(!shouldDecodeTile && spriteRenderingPosition < spriteSecondaryOamPosition) {
+                oam3[spriteRenderingPosition++].pattern = tilePattern;
+            }
             break;
 
         default:
+            break;
+    }
+
+    bool inRangeForSpriteEvaluation = renderingPositionX >= 64 && renderingPositionX < 256;
+    bool readFromPrimaryOam = renderingPositionX % 2 != 0;
+    u8 spriteEvaluationPhase = 4;
+    if(readFromPrimaryOam) {
+        spriteEvaluationPhase = registers.oamAddr++ & 0x3;
+    }
+
+    switch (spriteEvaluationPhase)
+    {
+        case 0:
+            if(spritePrimaryOamPosition >= 64) {
+                registers.oamAddr = 0;
+                break;
+            }
+            spritePrimaryOamPosition++;
+            if(spriteSecondaryOamPosition < 8) {
+                oam2[spriteSecondaryOamPosition].positionY = oamTempData;
+                oam2[spriteSecondaryOamPosition].spriteIndex = registers.oamAddr & 0x3F;
+            }
+            {
+                u8 top = oamTempData;
+                u8 bottom = top + (registers.ppuCtrl.spriteSize ? 16 : 8);
+                if(scanline >= top && scanline < bottom) {
+                    break;
+                }
+                registers.oamAddr = spritePrimaryOamPosition != 2 ? registers.oamAddr + 3 : 8;
+            }
+            break;
+        
+        case 1:
+            if(spriteSecondaryOamPosition < 8) {
+                oam2[spriteSecondaryOamPosition].tileIndexNumber.raw = oamTempData;
+            }
+            break;
+
+        case 2:
+            if(spriteSecondaryOamPosition < 8) {
+                oam2[spriteSecondaryOamPosition].attributes.raw = oamTempData;
+            }
+            break;
+
+        case 3:
+            if(spriteSecondaryOamPosition < 8) {
+                oam2[spriteSecondaryOamPosition].positionX = oamTempData;
+                spriteSecondaryOamPosition++;
+            } else {
+                registers.ppuStatus.spriteOverflow = 1;
+            }
+            if(spritePrimaryOamPosition) {
+                registers.oamAddr = 8;
+            }
+            break;
+    
+        default:
+            oamTempData = oam[registers.oamAddr];
             break;
     }
 }
@@ -187,6 +262,7 @@ void Ppu::renderingTick()
 void Ppu::renderPixel()
 {
     bool isOnEdge = renderingPositionX < 8 || renderingPositionX > 248;
+    bool showSprites =registers.ppuMask.showSp && (!isOnEdge || registers.ppuMask.showSp8);
     bool showBackground = registers.ppuMask.showBg && (!isOnEdge || registers.ppuMask.showBg8);
 
     unsigned patternPosition = 15 - (((renderingPositionX & 7) + 8 * !!(renderingPositionX * 7)) & 0xF);
@@ -197,6 +273,31 @@ void Ppu::renderPixel()
         attributes = (bgShiftAttributes >> (patternPosition * 2)) & (pixel > 0 ? 3 : 0);
     } else if((registers.ppuAddr & 0x3F00) == 0x3F00 && !registers.ppuMask.showBgSp) {
         pixel = registers.ppuAddr;
+    }
+
+    if(showSprites) {
+        for(unsigned spriteNumber = 0; spriteNumber < spriteRenderingPosition; spriteNumber++) {
+            auto& sprite = oam3[spriteNumber];
+            unsigned xDiff = renderingPositionX - sprite.positionX;
+            if(xDiff >= 8) {
+                continue;
+            }
+            if(!(sprite.attributes.horizontalFlip)) {
+                xDiff = 7 - xDiff;
+            }
+            u8 spritePixel = (sprite.pattern >> (xDiff * 2)) & 3;
+            if(spritePixel == 0) {
+                continue;
+            }
+            if(renderingPositionX < 255 && pixel && sprite.spriteIndex == 0) {
+                registers.ppuStatus.spriteZeroHit = 1;
+            }
+            if(!(sprite.attributes.priority) || !pixel) {
+                attributes = (sprite.attributes.pallete) + 4;
+                pixel = spritePixel;
+            }
+            break;
+        }
     }
 
     pixel = palette[(attributes * 4 + pixel) & 0x1F] & (registers.ppuMask.greyscale ? 0x30 : 0x3F);

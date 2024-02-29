@@ -4,7 +4,7 @@
 #include <array>
 #include <functional>
 
-#include "Oam.hpp"
+#include "OamData.hpp"
 #include "Cartridge.hpp"
 #include "PpuRegisters.hpp"
 #include "PpuFramebuffer.hpp"
@@ -46,9 +46,15 @@ class Ppu
         u32 bgShiftPattern;
         u32 bgShiftAttributes;
 
-        Oam<64> oam;
-        Oam<8> oam2;
+        std::array<u8, 256> oam;
+        std::array<OamData, 8> oam2;
+        std::array<OamData, 8> oam3;
         std::array<u8, 32> palette;
+
+        u8 oamTempData;
+        u8 spritePrimaryOamPosition;
+        u8 spriteSecondaryOamPosition;
+        u8 spriteRenderingPosition;
 
         std::function<void()> nmiTriggerCallback;
         std::function<void()> vblankInterruptCallback;
