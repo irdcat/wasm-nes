@@ -42,7 +42,7 @@ u8 Ppu::read(u8 index)
         registers.ppuStatus.inVBlank = false;
         offsetToggleLatch = false;
     } else if (index == 4) { // 0x2004 OAMDATA - OAM data port
-        result = oam[registers.oamAddr];
+        result = (registers.oamAddr & 3) == 2 ? oam[registers.oamAddr] & 0xE3 : oam[registers.oamAddr];
         refreshOpenBus(result);
     } else if (index == 7) { // 0x2007 PPUDATA - Ppu data register
         result = vramReadBuffer;
@@ -120,9 +120,15 @@ void Ppu::tick()
 
     if(scanline == 241 && renderingPositionX == 1) {
         registers.ppuStatus.inVBlank = 1;
-        registers.ppuStatus.spriteZeroHit = 0;
         nmiTriggerCallback();
         vblankInterruptCallback();
+    }
+
+    if(scanline == 260 && renderingPositionX == 330) {
+        registers.ppuStatus.spriteZeroHit = 0;
+        registers.ppuStatus.spriteOverflow = 0;
+        registers.ppuStatus.inVBlank = 0;
+        evenOddFrameToggle = !evenOddFrameToggle;
     }
 
     renderingPositionX++;
@@ -130,12 +136,9 @@ void Ppu::tick()
         renderingPositionX = 0;
         scanlineEndPosition = 341;
         scanline++;
-    }
-
-    if(scanline == 262) {
-        scanline = 0;
-        registers.ppuStatus.spriteZeroHit = 0;
-        registers.ppuStatus.inVBlank = 0;
+        if(scanline == 262) {
+            scanline = 0;
+        }
     }
 }
 
@@ -148,7 +151,7 @@ void Ppu::renderingTick()
     auto baseBgAddr = 0x1000 * registers.ppuCtrl.backgroundPatternTableAddress;
 
     auto interleave = [](auto lsb, auto msb) {
-        auto pattern = lsb | (msb << 8);
+        unsigned pattern = lsb | (msb << 8);
         pattern = (pattern & 0xF00F) | ((pattern & 0x0F00) >> 4) | ((pattern & 0x00F0) << 4);
         pattern = (pattern & 0xC3C3) | ((pattern & 0x3030) >> 2) | ((pattern & 0x0C0C) << 2);
         pattern = (pattern & 0x9999) | ((pattern & 0x4444) >> 1) | ((pattern & 0x2222) << 1);
@@ -235,7 +238,7 @@ void Ppu::renderingTick()
             break;
 
         case 7: // Background MSB
-            tilePattern = interleave(tilePattern, (ppuRead(patternTableAddress | 8) << 8));
+            tilePattern = interleave(tilePattern, ppuRead(patternTableAddress | 8));
             if(!shouldDecodeTile && spriteRenderingPosition < spriteSecondaryOamPosition) {
                 oam3[spriteRenderingPosition++].pattern = tilePattern;
             }
@@ -262,7 +265,7 @@ void Ppu::renderingTick()
             spritePrimaryOamPosition++;
             if(spriteSecondaryOamPosition < 8) {
                 oam2[spriteSecondaryOamPosition].positionY = oamTempData;
-                oam2[spriteSecondaryOamPosition].spriteIndex = registers.oamAddr & 0x3F;
+                oam2[spriteSecondaryOamPosition].spriteIndex = registers.oamAddr & 0xFC;
             }
             {
                 u8 top = oamTempData;
@@ -306,7 +309,7 @@ void Ppu::renderingTick()
 
 void Ppu::renderPixel()
 {
-    bool isOnEdge = renderingPositionX < 8 || renderingPositionX > 248;
+    bool isOnEdge = renderingPositionX < 8 || renderingPositionX >= 248;
     bool showSprites =registers.ppuMask.showSp && (!isOnEdge || registers.ppuMask.showSp8);
     bool showBackground = registers.ppuMask.showBg && (!isOnEdge || registers.ppuMask.showBg8);
 
@@ -336,10 +339,10 @@ void Ppu::renderPixel()
             if(spritePixel == 0) {
                 continue;
             }
-            if(renderingPositionX < 255 && pixel && sprite.spriteIndex == 0) {
+            if(renderingPositionX < 255 && pixel > 0 && sprite.spriteIndex == 0) {
                 registers.ppuStatus.spriteZeroHit = 1;
             }
-            if(!(sprite.attributes.priority) || !pixel) {
+            if(sprite.attributes.priority == 0 || pixel == 0) {
                 attributes = (sprite.attributes.pallete) + 4;
                 pixel = spritePixel;
             }
