@@ -29,9 +29,15 @@ bool Cartridge::loadFromFile(std::ifstream file)
     };
 
     prgRom.resize(nesHeaderData.prgRomBanks * 0x4000);
-    chrRom.resize(nesHeaderData.chrRomBanks * 0x2000);
     prgRam.resize(0x2000);
-    chrRam.resize(0x1000);
+    if(nesHeaderData.chrRomBanks > 0) {
+        chrRam.resize(0x1000);
+        chrRom.resize(nesHeaderData.chrRomBanks * 0x2000);
+        usesChrRamInsteadOfChrRom = false;
+    } else {
+        chrRam.resize(0x2000);
+        usesChrRamInsteadOfChrRom = true;
+    }
 
     switch (nesHeaderData.mirroring)
     {
@@ -60,7 +66,10 @@ bool Cartridge::loadFromFile(std::ifstream file)
 
 void Cartridge::write(u16 addr, u8 value)
 {
-    if (addr < 0x2000 || (addr >= 0x8000 && addr < 0xFFFF)) {
+    if(addr < 0x2000 && !usesChrRamInsteadOfChrRom) {
+        return;
+    }
+    if (addr >= 0x8000 && addr < 0xFFFF) {
         return;
     }
 
@@ -77,7 +86,11 @@ u8 &Cartridge::memoryRef(u16 addr)
 {
     static u8 dummyByte = 0;
     if (addr < 0x2000) {
-        return chrRom[addr % chrRom.size()];
+        if(usesChrRamInsteadOfChrRom) {
+            return chrRam[addr];
+        } else {
+            return chrRom[addr % chrRom.size()];
+        }
     } else if (addr < 0x3F00) {
         if(addr >= 0x3000) {
             addr -= 0x1000;

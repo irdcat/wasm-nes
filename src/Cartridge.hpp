@@ -24,6 +24,7 @@ class Cartridge
         std::vector<u8> chrRam;
 
         std::array<u16, 4> nta;
+        bool usesChrRamInsteadOfChrRom;
 
         u8& memoryRef(u16 addr);
 };
