@@ -2,10 +2,10 @@
 
 #include "Types.hpp"
 
-template <unsigned BitPosition, unsigned BitCount = 1>
+template <unsigned BitPosition, unsigned BitCount = 1, typename T = u8>
 struct RegisterBit
 {
-    RegisterBit& operator=(u8 value) 
+    RegisterBit& operator=(T value) 
     {
         // Keep the values of bits that are not managed by this instance
         data &= ~(mask << BitPosition);
@@ -15,7 +15,7 @@ struct RegisterBit
         return *this;
     };
 
-    operator u8() const
+    operator T() const
     {
         return (data >> BitPosition) & mask;
     };
@@ -26,7 +26,13 @@ struct RegisterBit
         return *this;
     };
 
-    u8 operator++(int)
+    template <typename T2>
+    RegisterBit& operator+=(T2 value)
+    {
+        data += value;
+    }
+
+    T operator++(int)
     {
         auto old = data;
         data++;
@@ -34,6 +40,6 @@ struct RegisterBit
     };
 
     private:
-        u8 data;
+        T data;
         static constexpr const unsigned mask = (1 << BitCount) - 1;
 };

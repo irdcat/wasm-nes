@@ -49,32 +49,24 @@ union PpuStatusRegister
     PpuStatusRegister& operator=(u8 value) { raw = value; return *this; }
 };
 
-union PpuScrollRegister
+union PpuInternalRegister
 {
-    u16 raw;
-    struct
-    {
-        u8 x;
-        u8 y;
-    };
+    RegisterBit<0, 15, u32> raw;
+    RegisterBit<0, 5, u32> coarseX;
+    RegisterBit<5, 5, u32> coarseY;
+    RegisterBit<10, 2, u32> baseNametable;
+    RegisterBit<10, 1, u32> baseHorizontalNametable;
+    RegisterBit<11, 1, u32> baseVerticalNametable;
+    RegisterBit<12, 3, u32> fineY;
+    RegisterBit<15, 3, u32> fineX;
+    RegisterBit<0, 8, u32> vramAddressLow;
+    RegisterBit<8, 6, u32> vramAddressHigh;
+    RegisterBit<0, 14, u32> vramAddress;
+    RegisterBit<15, 1, u32> msbT;
 
-    operator u16&() { return raw; }
+    operator u16() { return raw; }
 
-    PpuScrollRegister& operator=(u16 value) { raw = value; return *this; }
-};
-
-union PpuAddressRegister
-{
-    u16 raw;
-    struct 
-    {
-        u8 low;
-        u8 high;
-    };
-    
-    operator u16&() { return raw; }
-
-    PpuAddressRegister& operator=(u16 value) { raw = value; return *this; }
+    PpuInternalRegister& operator=(u16 value) { raw = value; return *this; }
 };
 
 struct PpuRegisters
@@ -83,6 +75,6 @@ struct PpuRegisters
     PpuMaskRegister ppuMask;
     PpuStatusRegister ppuStatus;
     u8 oamAddr;
-    PpuScrollRegister ppuScroll;
-    PpuAddressRegister ppuAddr;
+    PpuInternalRegister currentVramAddress;
+    PpuInternalRegister temporaryVramAddress;
 };

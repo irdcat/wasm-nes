@@ -34,8 +34,10 @@ class Ppu
         u8 openBusContents;
         u8 vramReadBuffer;
         unsigned scanline;
+        unsigned scanlineEndPosition;
         unsigned renderingPositionX;
         bool offsetToggleLatch;
+        bool evenOddFrameToggle;
         
         u16 patternTableAddress;
         u16 attributeTableAddress;
