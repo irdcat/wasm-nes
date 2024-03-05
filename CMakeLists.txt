@@ -12,7 +12,7 @@ if(EMSCRIPTEN)
         src/SdlColor.cpp
         src/main.cpp)
     set(CMAKE_EXECUTABLE_SUFFIX ".js")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -g -O0")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -O3")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sWASM=1 -sALLOW_MEMORY_GROWTH=1 -sUSE_SDL=2 -sFORCE_FILESYSTEM=1")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sEXPORTED_FUNCTIONS=[_main,_loadRom] -sEXPORTED_RUNTIME_METHODS=ccall")
     
@@ -33,7 +33,7 @@ if(NOT EMSCRIPTEN)
         tests/util/TestExecutor.cpp
         tests/main.cpp)
     set(CXX_STANDARD 20)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -g")
 
     add_library(wasm-nes ${APP_LIB_SOURCES})
     add_executable(wasm-nes-tests ${TEST_SOURCES})
