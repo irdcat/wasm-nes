@@ -77,10 +77,10 @@ void Ppu::write(u8 index, u8 data)
         oam[registers.oamAddr++] = data;
     } else if (index == 5) { // 0x2005 PPUSCROLL - Ppu scrolling position register (X Scroll on first write, Y Scroll on second write)
         if(offsetToggleLatch) {
-            registers.temporaryVramAddress.coarseY = ((data & 0xF8) >> 3);
+            registers.temporaryVramAddress.coarseY = data >> 3;
             registers.temporaryVramAddress.fineY = data & 0x7;
         } else {
-            registers.temporaryVramAddress.coarseX = ((data & 0xF8) >> 3);
+            registers.temporaryVramAddress.coarseX = data >> 3;
             registers.currentVramAddress.fineX = data & 0x7;
         }
         offsetToggleLatch = !offsetToggleLatch;
@@ -90,13 +90,13 @@ void Ppu::write(u8 index, u8 data)
             registers.currentVramAddress.raw = registers.temporaryVramAddress.raw;
         } else {
             registers.temporaryVramAddress.vramAddressHigh = data & 0x3F;
-            registers.temporaryVramAddress.msbT = 0;
         }
         offsetToggleLatch = !offsetToggleLatch;
     } else if (index == 7) { // 0x2007 PPUDATA - Ppu data register
-        ppuWrite(registers.currentVramAddress.vramAddress, data);
+        auto& vramAddress = registers.currentVramAddress.vramAddress;
+        ppuWrite(vramAddress, data);
         refreshOpenBus(data);
-        registers.currentVramAddress.vramAddress = registers.currentVramAddress.vramAddress + (registers.ppuCtrl.vramAddressIncrement ? 32 : 1);
+        vramAddress = vramAddress + (registers.ppuCtrl.vramAddressIncrement ? 32 : 1);
     }
 }
 
