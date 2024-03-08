@@ -9,7 +9,7 @@ function loadRom() {
     fileReader.readAsArrayBuffer(file);
 }
 
-async function runRom(e) {
+function runRom(e) {
     let result = fileReader.result;
     const resultByteArray = new Uint8Array(result);
     const memFsFilename = "rom.nes"
@@ -22,14 +22,6 @@ async function runRom(e) {
  */
 const CANVAS_ID = "canvas";
 
-function printToLog(color, text) {
-    let logElement = document.getElementById("log");
-    let paragraphElement = document.createElement("p");
-    paragraphElement.style = `color: ${color}; font-size: 12px`;
-    paragraphElement.innerText = text;
-    logElement.appendChild(paragraphElement);
-}
-
 var Module = {
     onRuntimeInitialized: function() {
         // Workaround to avoid DaisyUI styles being overwritten by style element inserted into head by Tailwind script 
@@ -40,13 +32,5 @@ var Module = {
     canvas: (function(){
         let canvas = document.getElementById(CANVAS_ID);
         return canvas;
-    })(),
-
-    print: function(text) {
-        printToLog("white", text);
-    },
-
-    printErr: function(text) {
-        printToLog("red", text);
-    }
+    })()
 }

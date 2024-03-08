@@ -25,6 +25,8 @@ class Ppu
 
         void tick();
 
+        u8 getColorFromPalette(u8 palleteId, u8 pixel);
+
     private:
         std::shared_ptr<Cartridge> cartridge;
         std::shared_ptr<PpuFramebuffer> framebuffer;
@@ -33,7 +35,7 @@ class Ppu
         unsigned openBusDecayTimer;
         u8 openBusContents;
         u8 vramReadBuffer;
-        unsigned scanline;
+        int scanline;
         unsigned scanlineEndPosition;
         unsigned renderingPositionX;
         bool offsetToggleLatch;
@@ -61,7 +63,10 @@ class Ppu
         std::function<void()> nmiTriggerCallback;
         std::function<void()> vblankInterruptCallback;
 
+        u16 interleavePatternBytes(u8 lsb, u8 msb);
+
         void renderingTick();
+        void spriteEvaluation();
         void renderPixel();
 
         void refreshOpenBus(u8 value);

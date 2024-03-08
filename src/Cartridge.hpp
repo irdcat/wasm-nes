@@ -17,11 +17,13 @@ class Cartridge
 
         u8 read(u16 addr);
 
+        const std::vector<u8>& getChrRom();
+
     private:
         std::vector<u8> prgRom;
         std::vector<u8> chrRom;
-        std::vector<u8> prgRam;
-        std::vector<u8> chrRam;
+        std::array<u8, 0x2000> prgRam;
+        std::array<u8, 0x1000> chrRam;
 
         std::array<u16, 4> nta;
         bool usesChrRamInsteadOfChrRom;
