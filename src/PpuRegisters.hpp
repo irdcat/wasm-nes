@@ -74,6 +74,6 @@ struct PpuRegisters
     PpuMaskRegister ppuMask;
     PpuStatusRegister ppuStatus;
     u8 oamAddr;
-    PpuInternalRegister currentVramAddress;
-    PpuInternalRegister temporaryVramAddress;
+    PpuInternalRegister vaddr;
+    PpuInternalRegister taddr;
 };

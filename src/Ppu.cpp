@@ -11,7 +11,7 @@ Ppu::Ppu(const std::shared_ptr<Cartridge>& cartridge,
     , openBusDecayTimer(0)
     , openBusContents(0)
     , vramReadBuffer(0)
-    , scanline(261)
+    , scanline(-1)
     , scanlineEndPosition(341)
     , renderingPositionX(0)
     , offsetToggleLatch(false)
@@ -46,15 +46,15 @@ u8 Ppu::read(u8 index)
         refreshOpenBus(result);
     } else if (index == 7) { // 0x2007 PPUDATA - Ppu data register
         result = vramReadBuffer;
-        auto ppuData = ppuRead(registers.currentVramAddress.vramAddress);
-        if((registers.currentVramAddress.vramAddress & 0x3F00) == 0x3F00) {
+        auto ppuData = ppuRead(registers.vaddr.vramAddress);
+        if((registers.vaddr.vramAddress & 0x3F00) == 0x3F00) {
             result = (openBusContents & 0xC0) | (ppuData & 0x3F);
-            vramReadBuffer = ppuRead(0x2F00 | registers.currentVramAddress.vramAddress & 0xFF);
+            vramReadBuffer = ppuRead(0x2F00 | (registers.vaddr.vramAddress & 0xFF));
         } else {
             vramReadBuffer = ppuData;
         }
         refreshOpenBus(result);
-        registers.currentVramAddress.vramAddress = registers.currentVramAddress.vramAddress + (registers.ppuCtrl.vramAddressIncrement ? 32 : 1);
+        registers.vaddr.vramAddress = registers.vaddr.vramAddress + (registers.ppuCtrl.vramAddressIncrement ? 32 : 1);
     }
     return result;
 }
@@ -65,7 +65,7 @@ void Ppu::write(u8 index, u8 data)
     if(index == 0) { // 0x2000 PPUCTRL - Ppu control register
         auto oldVBlankNmi = registers.ppuCtrl.VBlankNmi;
         registers.ppuCtrl = data;
-        registers.temporaryVramAddress.baseNametable = registers.ppuCtrl.baseNametableAddress;
+        registers.taddr.baseNametable = registers.ppuCtrl.baseNametableAddress;
         if(!oldVBlankNmi && registers.ppuCtrl.VBlankNmi && registers.ppuStatus.inVBlank) {
             nmiTriggerCallback();
         }
@@ -77,23 +77,23 @@ void Ppu::write(u8 index, u8 data)
         oam[registers.oamAddr++] = data;
     } else if (index == 5) { // 0x2005 PPUSCROLL - Ppu scrolling position register (X Scroll on first write, Y Scroll on second write)
         if(offsetToggleLatch) {
-            registers.temporaryVramAddress.coarseY = data >> 3;
-            registers.temporaryVramAddress.fineY = data & 0x7;
+            registers.taddr.coarseY = data >> 3;
+            registers.taddr.fineY = data & 0x7;
         } else {
-            registers.temporaryVramAddress.coarseX = data >> 3;
-            registers.currentVramAddress.fineX = data & 0x7;
+            registers.taddr.coarseX = data >> 3;
+            registers.vaddr.fineX = data & 0x7;
         }
         offsetToggleLatch = !offsetToggleLatch;
     } else if (index == 6) { // 0x2006 PPUADDR - Ppu address register (MSB on first write, LSB on second write)
         if(offsetToggleLatch) {
-            registers.temporaryVramAddress.vramAddressLow = data;
-            registers.currentVramAddress.raw = registers.temporaryVramAddress.raw;
+            registers.taddr.vramAddressLow = data;
+            registers.vaddr.raw = registers.taddr.raw;
         } else {
-            registers.temporaryVramAddress.vramAddressHigh = data & 0x3F;
+            registers.taddr.vramAddressHigh = data & 0x3F;
         }
         offsetToggleLatch = !offsetToggleLatch;
     } else if (index == 7) { // 0x2007 PPUDATA - Ppu data register
-        auto& vramAddress = registers.currentVramAddress.vramAddress;
+        auto& vramAddress = registers.vaddr.vramAddress;
         ppuWrite(vramAddress, data);
         refreshOpenBus(data);
         vramAddress = vramAddress + (registers.ppuCtrl.vramAddressIncrement ? 32 : 1);
@@ -109,11 +109,11 @@ void Ppu::tick()
         }
     }
 
-    if(scanline < 240 || scanline == 261) {
+    if(scanline < 240) {
         if(registers.ppuMask.showBgSp) {
             renderingTick();
         }
-        if(scanline != 261 && renderingPositionX < 256) {
+        if(scanline != -1 && renderingPositionX < 256) {
             renderPixel();
         }
     }
@@ -136,88 +136,94 @@ void Ppu::tick()
         renderingPositionX = 0;
         scanlineEndPosition = 341;
         scanline++;
-        if(scanline == 262) {
-            scanline = 0;
+        if(scanline == 261) {
+            scanline = -1;
         }
     }
+}
+
+u8 Ppu::getColorFromPalette(u8 paletteId, u8 pixel)
+{
+    return ppuRead(0x3F00 + (paletteId * 4) + pixel) & 0x3F;
+}
+
+u16 Ppu::interleavePatternBytes(u8 lsb, u8 msb)
+{
+    auto pattern = u16(lsb) | u16(msb) << 8;
+    pattern = (pattern & 0xF00F) | ((pattern & 0xF00) >> 4) | ((pattern & 0xF0) << 4);
+    pattern = (pattern & 0xC3C3) | ((pattern & 0x3030) >> 2) | ((pattern & 0xC0C) << 2);
+    pattern = (pattern & 0x9999) | ((pattern & 0x4444) >> 1) | ((pattern & 0x2222) << 1);
+    return pattern;
 }
 
 void Ppu::renderingTick()
 {
     auto shouldDecodeTile = (renderingPositionX >= 0 && renderingPositionX <= 255) 
         || (renderingPositionX >= 320 && renderingPositionX <= 335);
-
-    auto baseNtAddr = 0x2000 + registers.ppuCtrl.baseNametableAddress * 0x400;
-    auto baseBgAddr = 0x1000 * registers.ppuCtrl.backgroundPatternTableAddress;
-
-    auto interleave = [](auto lsb, auto msb) {
-        unsigned pattern = lsb | (msb << 8);
-        pattern = (pattern & 0xF00F) | ((pattern & 0x0F00) >> 4) | ((pattern & 0x00F0) << 4);
-        pattern = (pattern & 0xC3C3) | ((pattern & 0x3030) >> 2) | ((pattern & 0x0C0C) << 2);
-        pattern = (pattern & 0x9999) | ((pattern & 0x4444) >> 1) | ((pattern & 0x2222) << 1);
-        return pattern;
-    };
+    
+    auto& vaddr = registers.vaddr;
+    auto& taddr = registers.taddr;
+    auto& ppuCtrl = registers.ppuCtrl;
+    auto& ppuMask = registers.ppuMask;
+    auto& oamAddr = registers.oamAddr;
 
     switch (renderingPositionX % 8)
     {
-        case 2: // Point to attribute table
-            attributeTableAddress = 0x23C0 + 0x400 * registers.currentVramAddress.baseNametable;
-            attributeTableAddress += 8 * (registers.currentVramAddress.coarseY / 4);
-            attributeTableAddress += registers.currentVramAddress.coarseX / 4;
-            if(shouldDecodeTile) {
-                break;
-            }
-        case 0: // Point to nametable table
-            attributeTableAddress = baseNtAddr + (registers.currentVramAddress.vramAddress & 0xFFF);
+        case 0: // Point to nametable
+            attributeTableAddress = 0x2000 + (vaddr.raw & 0xFFF);
             if(renderingPositionX == 0) {
                 spritePrimaryOamPosition = 0;
                 spriteSecondaryOamPosition = 0;
-                if(registers.ppuMask.showSp) {
-                    registers.oamAddr = 0;
+                if(ppuMask.showSp) {
+                    oamAddr = 0;
                 }
             }
-            if(registers.ppuMask.showBg) {
-                if(renderingPositionX == 304 && scanline == 261) {
-                    registers.currentVramAddress.raw = registers.temporaryVramAddress.raw;
+            if(ppuMask.showBg) {
+                if(renderingPositionX == 304 && scanline == -1) {
+                    vaddr.raw = (unsigned) taddr.raw;
                 }
                 if(renderingPositionX == 256) {
-                    registers.currentVramAddress.coarseX = registers.temporaryVramAddress.coarseX;
-                    registers.currentVramAddress.baseHorizontalNametable = registers.temporaryVramAddress.baseHorizontalNametable;
+                    vaddr.coarseX = (unsigned) taddr.coarseX;
+                    vaddr.baseHorizontalNametable = (unsigned) taddr.baseHorizontalNametable;
                     spriteRenderingPosition = 0;
                 }
             }
             break;
 
         case 1: // Nametable access
-            if(renderingPositionX == 337 && scanline == 261 && evenOddFrameToggle && registers.ppuMask.showBg) {
+            if(renderingPositionX == 337 && scanline == -1 && evenOddFrameToggle && ppuMask.showBg) {
                 scanlineEndPosition = 340;
             }
-            patternTableAddress = baseBgAddr + 16 * ppuRead(attributeTableAddress) + registers.currentVramAddress.fineY;
+            patternTableAddress = 0x1000 * ppuCtrl.backgroundPatternTableAddress;
+            patternTableAddress += 16 * ppuRead(attributeTableAddress) + vaddr.fineY;
             if(shouldDecodeTile) {
                 bgShiftPattern = (bgShiftPattern >> 16) | (tilePattern << 16);
                 bgShiftAttributes = (bgShiftAttributes >> 16) | ((tileAttributes * 0x5555) << 16);
             }
             break;
 
+        case 2: // Point to attribute table
+            attributeTableAddress = 0x23C0 + 0x400 * vaddr.baseNametable;
+            attributeTableAddress += 8 * (vaddr.coarseY / 4);
+            attributeTableAddress += vaddr.coarseX / 4;
+            break;
+
         case 3: // Attribute table access
             if(shouldDecodeTile) {
-                tileAttributes = ppuRead(attributeTableAddress);
-                tileAttributes >>= ((registers.currentVramAddress.coarseX & 2) + 2 * (registers.currentVramAddress.coarseY & 2));
-                tileAttributes &= 3;
-
-                registers.currentVramAddress.coarseX++;
-                if(registers.currentVramAddress.coarseX == 0) {
-                    registers.currentVramAddress.baseHorizontalNametable = 1 - registers.currentVramAddress.baseHorizontalNametable;
+                tileAttributes = (ppuRead(attributeTableAddress) >> ((vaddr.coarseX & 2) + 2 * (vaddr.coarseY & 2))) & 3;
+                vaddr.coarseX++;
+                if(vaddr.coarseX == 0) {
+                    vaddr.baseHorizontalNametable = ~vaddr.baseHorizontalNametable;
                 }
                 if(renderingPositionX == 251) {
-                    registers.currentVramAddress.fineY++;
-                    if(registers.currentVramAddress.fineY != 0) {
+                    vaddr.fineY++;
+                    if(vaddr.fineY != 0) {
                         break;
                     }
-                    registers.currentVramAddress.coarseY++;
-                    if(registers.currentVramAddress.coarseY == 30) {
-                        registers.currentVramAddress.coarseY = 0;
-                        registers.currentVramAddress.baseVerticalNametable = 1 - registers.currentVramAddress.baseVerticalNametable;
+                    vaddr.coarseY++;
+                    if(vaddr.coarseY == 30) {
+                        vaddr.coarseY = 0;
+                        vaddr.baseVerticalNametable = ~vaddr.baseVerticalNametable;
                     }
                 }
             } else if (spriteRenderingPosition < spriteSecondaryOamPosition) {
@@ -225,10 +231,10 @@ void Ppu::renderingTick()
                 currentSprite = oam2[spriteRenderingPosition];
                 unsigned y = scanline - currentSprite.positionY;
                 if(currentSprite.attributes.verticalFlip) {
-                    y ^= (registers.ppuCtrl.spriteSize ? 15 : 7);
+                    y ^= (ppuCtrl.spriteSize ? 15 : 7);
                 }
-                patternTableAddress = 0x1000 * (registers.ppuCtrl.spriteSize ? currentSprite.tileIndexNumber.bank : registers.ppuCtrl.spritePatternTableAddress);
-                patternTableAddress += 0x10 * (registers.ppuCtrl.spriteSize ? currentSprite.tileIndexNumber.tileNumber : currentSprite.tileIndexNumber.raw);
+                patternTableAddress = 0x1000 * (ppuCtrl.spriteSize ? currentSprite.tileIndexNumber.bank : ppuCtrl.spritePatternTableAddress);
+                patternTableAddress += 0x10 * (ppuCtrl.spriteSize ? currentSprite.tileIndexNumber.tileNumber : currentSprite.tileIndexNumber.raw);
                 patternTableAddress += (y & 7) + (y & 8) * 2;
             }
             break;
@@ -238,7 +244,7 @@ void Ppu::renderingTick()
             break;
 
         case 7: // Background MSB
-            tilePattern = interleave(tilePattern, ppuRead(patternTableAddress | 8));
+            tilePattern = interleavePatternBytes(tilePattern, ppuRead(patternTableAddress | 8));
             if(!shouldDecodeTile && spriteRenderingPosition < spriteSecondaryOamPosition) {
                 oam3[spriteRenderingPosition++].pattern = tilePattern;
             }
@@ -247,11 +253,19 @@ void Ppu::renderingTick()
         default:
             break;
     }
+    spriteEvaluation();
+}
+
+void Ppu::spriteEvaluation()
+{
+    auto& ppuCtrl = registers.ppuCtrl;
+    auto& ppuStatus = registers.ppuStatus;
+    auto& oamAddr = registers.oamAddr;
 
     bool inRangeForSpriteEvaluation = renderingPositionX >= 64 && renderingPositionX < 256;
     bool readFromPrimaryOam = renderingPositionX % 2 != 0;
     u8 spriteEvaluationPhase = 4;
-    if(readFromPrimaryOam) {
+    if(inRangeForSpriteEvaluation && readFromPrimaryOam) {
         spriteEvaluationPhase = registers.oamAddr++ & 0x3;
     }
 
@@ -259,21 +273,21 @@ void Ppu::renderingTick()
     {
         case 0:
             if(spritePrimaryOamPosition >= 64) {
-                registers.oamAddr = 0;
+                oamAddr = 0;
                 break;
             }
             spritePrimaryOamPosition++;
             if(spriteSecondaryOamPosition < 8) {
                 oam2[spriteSecondaryOamPosition].positionY = oamTempData;
-                oam2[spriteSecondaryOamPosition].spriteIndex = registers.oamAddr & 0xFC;
+                oam2[spriteSecondaryOamPosition].spriteIndex = (oamAddr >> 2);
             }
             {
                 u8 top = oamTempData;
-                u8 bottom = top + (registers.ppuCtrl.spriteSize ? 16 : 8);
+                u8 bottom = top + (ppuCtrl.spriteSize ? 16 : 8);
                 if(scanline >= top && scanline < bottom) {
                     break;
                 }
-                registers.oamAddr = spritePrimaryOamPosition != 2 ? registers.oamAddr + 3 : 8;
+                oamAddr = oamAddr + 3;
             }
             break;
         
@@ -294,15 +308,12 @@ void Ppu::renderingTick()
                 oam2[spriteSecondaryOamPosition].positionX = oamTempData;
                 spriteSecondaryOamPosition++;
             } else {
-                registers.ppuStatus.spriteOverflow = 1;
-            }
-            if(spritePrimaryOamPosition) {
-                registers.oamAddr = 8;
+                ppuStatus.spriteOverflow = 1;
             }
             break;
     
         default:
-            oamTempData = oam[registers.oamAddr];
+            oamTempData = oam[oamAddr];
             break;
     }
 }
@@ -313,21 +324,19 @@ void Ppu::renderPixel()
     bool showSprites =registers.ppuMask.showSp && (!isOnEdge || registers.ppuMask.showSp8);
     bool showBackground = registers.ppuMask.showBg && (!isOnEdge || registers.ppuMask.showBg8);
 
-    unsigned fx = registers.currentVramAddress.fineX;
-    bool xDivisibleBy8 = (renderingPositionX & 7) > 0 ? 1 : 0;
-    unsigned patternPosition = 15 - (((renderingPositionX & 7) + fx + 8 * xDivisibleBy8) & 15);
+    unsigned fx = registers.vaddr.fineX;
+    bool xDivisibleBy8 = (renderingPositionX & 7) > 0 ? 0 : 1;
+    unsigned patternPosition = 15 - (((renderingPositionX & 7) + fx + 8 * !xDivisibleBy8) & 15);
     unsigned pixel = 0;
     unsigned attributes = 0;
     if(showBackground) {
         pixel = (bgShiftPattern >> (patternPosition * 2)) & 3;
         attributes = (bgShiftAttributes >> (patternPosition * 2)) & (pixel > 0 ? 3 : 0);
-    } else if(registers.currentVramAddress.vramAddress == 0x3F00 && !registers.ppuMask.showBgSp) {
-        pixel = registers.currentVramAddress.vramAddress;
     }
 
     if(showSprites) {
         for(unsigned spriteNumber = 0; spriteNumber < spriteRenderingPosition; spriteNumber++) {
-            auto& sprite = oam3[spriteNumber];
+            const auto& sprite = oam3[spriteNumber];
             unsigned xDiff = renderingPositionX - sprite.positionX;
             if(xDiff >= 8) {
                 continue;

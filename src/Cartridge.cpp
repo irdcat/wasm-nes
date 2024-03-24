@@ -29,8 +29,6 @@ bool Cartridge::loadFromFile(std::ifstream file)
     };
 
     prgRom.resize(nesHeaderData.prgRomBanks * 0x4000);
-    prgRam.resize(0x2000);
-    chrRam.resize(0x1000);
     if(nesHeaderData.chrRomBanks > 0) {
         chrRom.resize(nesHeaderData.chrRomBanks * 0x2000);
         usesChrRamInsteadOfChrRom = false;
@@ -80,6 +78,11 @@ void Cartridge::write(u16 addr, u8 value)
 u8 Cartridge::read(u16 addr)
 {
     return memoryRef(addr);
+}
+
+const std::vector<u8>& Cartridge::getChrRom()
+{
+    return chrRom;
 }
 
 u8 &Cartridge::memoryRef(u16 addr)

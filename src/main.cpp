@@ -37,7 +37,7 @@ int main()
         std::cerr << "Failed to initialize SDL Video" << std::endl;
         return 0;
     }
-    emscripten_set_main_loop(mainLoop, 60, 1);
+    emscripten_set_main_loop(mainLoop, -1, 1);
     SDL_Quit();
     return 0;
 }
