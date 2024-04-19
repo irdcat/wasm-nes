@@ -35,15 +35,11 @@ class Emulator
 
         bool shouldRun;
 
-        SdlResource<SDL_Texture> screenTexture;
-        SdlResource<SDL_Texture> patternTableZeroTexture;
-        SdlResource<SDL_Texture> patternTableOneTexture;
-
+        SdlResource<SDL_Texture> texture;
         SdlResource<SDL_Window> window;
         SdlResource<SDL_Renderer> renderer;
 
         void updateScreen();
-        void updatePatternTables();
 
         static constexpr const unsigned DISPLAY_WIDTH = 256;
         static constexpr const unsigned DISPLAY_HEIGHT = 240;

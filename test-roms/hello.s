@@ -40,7 +40,7 @@ clear_memory:
   sta $0600, x
   sta $0700, x
   inx
-  bne clear_memory      ; Loop until clearing all contents of the pages
+  bne clear_memory
 
 vblankwait2:
   bit $2002
