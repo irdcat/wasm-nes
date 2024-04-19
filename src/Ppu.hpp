@@ -65,6 +65,9 @@ class Ppu
 
         u16 interleavePatternBytes(u8 lsb, u8 msb);
 
+        void incrementScrollX();
+        void incrementScrollY();
+
         void renderingTick();
         void spriteEvaluation();
         void renderPixel();
@@ -73,4 +76,6 @@ class Ppu
 
         u8 ppuRead(u16 addr);
         void ppuWrite(u16 addr, u8 value);
+
+        static constexpr const unsigned OPEN_BUS_DECAY_TICKS = 77777;
 };

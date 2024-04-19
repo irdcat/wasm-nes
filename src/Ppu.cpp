@@ -156,6 +156,23 @@ u16 Ppu::interleavePatternBytes(u8 lsb, u8 msb)
     return pattern;
 }
 
+void Ppu::incrementScrollX()
+{
+    auto& vaddr = registers.vaddr;
+    if(++vaddr.coarseX == 0) {
+        vaddr.baseHorizontalNametable = ~vaddr.baseHorizontalNametable;
+    }
+}
+
+void Ppu::incrementScrollY()
+{
+    auto& vaddr = registers.vaddr;
+    if(++vaddr.fineY == 0 && ++vaddr.coarseY == 30) {
+        vaddr.coarseY = 0;
+        vaddr.baseVerticalNametable = ~vaddr.baseVerticalNametable;
+    }
+}
+
 void Ppu::renderingTick()
 {
     auto shouldDecodeTile = (renderingPositionX >= 0 && renderingPositionX <= 255) 
@@ -195,36 +212,28 @@ void Ppu::renderingTick()
                 scanlineEndPosition = 340;
             }
             patternTableAddress = 0x1000 * ppuCtrl.backgroundPatternTableAddress;
-            patternTableAddress += 16 * ppuRead(attributeTableAddress) + vaddr.fineY;
+            patternTableAddress += (ppuRead(attributeTableAddress) << 4) + vaddr.fineY;
             if(shouldDecodeTile) {
-                bgShiftPattern = (bgShiftPattern >> 16) | (tilePattern << 16);
-                bgShiftAttributes = (bgShiftAttributes >> 16) | ((tileAttributes * 0x5555) << 16);
+                bgShiftPattern = (bgShiftPattern >> 16) | 0x00010000 * tilePattern;
+                bgShiftAttributes = (bgShiftAttributes >> 16) | tileAttributes * 0x55550000;
             }
             break;
 
-        case 2: // Point to attribute table
-            attributeTableAddress = 0x23C0 + 0x400 * vaddr.baseNametable;
-            attributeTableAddress += 8 * (vaddr.coarseY / 4);
-            attributeTableAddress += vaddr.coarseX / 4;
+        case 2: // Point to attribute table or nametable with sprites
+            if(shouldDecodeTile) {
+                attributeTableAddress = 0x23C0 | (vaddr.baseNametable << 11) 
+                    | ((vaddr.coarseY >> 2) << 3) | (vaddr.coarseX >> 2);
+            } else {
+                attributeTableAddress = 0x2000 | (vaddr.raw & 0xFFF);
+            }
             break;
 
         case 3: // Attribute table access
             if(shouldDecodeTile) {
                 tileAttributes = (ppuRead(attributeTableAddress) >> ((vaddr.coarseX & 2) + 2 * (vaddr.coarseY & 2))) & 3;
-                vaddr.coarseX++;
-                if(vaddr.coarseX == 0) {
-                    vaddr.baseHorizontalNametable = ~vaddr.baseHorizontalNametable;
-                }
+                incrementScrollX();
                 if(renderingPositionX == 251) {
-                    vaddr.fineY++;
-                    if(vaddr.fineY != 0) {
-                        break;
-                    }
-                    vaddr.coarseY++;
-                    if(vaddr.coarseY == 30) {
-                        vaddr.coarseY = 0;
-                        vaddr.baseVerticalNametable = ~vaddr.baseVerticalNametable;
-                    }
+                    incrementScrollY();
                 }
             } else if (spriteRenderingPosition < spriteSecondaryOamPosition) {
                 auto& currentSprite = oam3[spriteRenderingPosition];
@@ -365,7 +374,7 @@ void Ppu::renderPixel()
 
 void Ppu::refreshOpenBus(u8 value)
 {
-    openBusDecayTimer = 77777;
+    openBusDecayTimer = OPEN_BUS_DECAY_TICKS;
     openBusContents = value;
 }
 
