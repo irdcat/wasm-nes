@@ -22,8 +22,7 @@ struct RegisterBit
 
     RegisterBit& operator++()
     {
-        data++;
-        return *this;
+        return *this = *this + 1;
     };
 
     template <typename T2>
@@ -35,7 +34,7 @@ struct RegisterBit
     T operator++(int)
     {
         auto old = data;
-        data++;
+        *this = *this + 1;
         return old;
     };
 
