@@ -15,7 +15,7 @@ class Cpu
 
         ~Cpu() = default;
 
-        void step();
+        unsigned step();
 
         void reset();
 

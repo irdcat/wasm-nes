@@ -14,23 +14,24 @@ Cpu::Cpu(const std::shared_ptr<Mmu> &mmu)
     irqPending = false;
 }
 
-void Cpu::step()
+unsigned Cpu::step()
 {
     if(nmiPending) {
         handleInterrupt(InterruptType::NMI);
         nmiPending = false;
         irqPending = false;
-        return;
+        return mmu->getAndResetTickCounterValue();
     }
     if(irqPending) {
         handleInterrupt(InterruptType::IRQ);
         nmiPending = false;
         irqPending = false;
-        return;
+        return mmu->getAndResetTickCounterValue();
     }
 
     auto opcode = fetchOpcode();
     executeInstruction(opcode);
+    return mmu->getAndResetTickCounterValue();
 }
 
 void Cpu::reset()

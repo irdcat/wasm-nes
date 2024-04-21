@@ -14,6 +14,7 @@ Emulator::Emulator()
 
     auto vblankInterruptCallback = [this](){
         updateScreen();
+        render();
     };
 
     ppu = std::make_shared<Ppu>(cartridge, ppuFramebuffer, nmiTriggerCallback, vblankInterruptCallback);
@@ -163,9 +164,11 @@ void Emulator::handleInput()
 
 void Emulator::update(u32 millisElapsed)
 {
-    unsigned cyclesToExecute = CPU_CYCLES_PER_SECOND * millisElapsed / 1000;
-    while(cyclesToExecute--) {
-        cpu->step();
+    static constexpr unsigned const CYCLES_PER_MILLISECOND = CPU_CYCLES_PER_SECOND / 1000;
+    unsigned cyclesToExecute = CYCLES_PER_MILLISECOND * millisElapsed;
+    unsigned cyclesExecuted = 0;
+    while(cyclesExecuted < cyclesToExecute) {
+        cyclesExecuted += cpu->step();
     }
 }
 
