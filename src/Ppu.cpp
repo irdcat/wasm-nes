@@ -1,12 +1,10 @@
 #include "Ppu.hpp"
 #include "Cpu.hpp"
 
-Ppu::Ppu(const std::shared_ptr<Cartridge>& cartridge, 
-    const std::shared_ptr<Framebuffer>& framebuffer,
+Ppu::Ppu(const std::shared_ptr<Cartridge>& cartridge,
     const std::function<void()>& nmiTriggerCallback,
     const std::function<void()>& vblankInterruptCallback)
     : cartridge(cartridge)
-    , framebuffer(framebuffer)
     , registers()
     , openBusDecayTimer(0)
     , openBusContents(0)
@@ -142,9 +140,9 @@ void Ppu::tick()
     }
 }
 
-u8 Ppu::getColorFromPalette(u8 paletteId, u8 pixel)
+const Ppu::Framebuffer& Ppu::getFramebuffer()
 {
-    return ppuRead(0x3F00 + (paletteId * 4) + pixel) & 0x3F;
+    return framebuffer;
 }
 
 u16 Ppu::interleavePatternBytes(u8 lsb, u8 msb)
@@ -369,7 +367,7 @@ void Ppu::renderPixel()
     }
 
     pixel = palette[(attributes * 4 + pixel) & 0x1F] & (registers.ppuMask.greyscale ? 0x30 : 0x3F);
-    framebuffer->setColor(renderingPositionX, scanline, pixel);
+    framebuffer[scanline * SCREEN_WIDTH + renderingPositionX] = pixel;
 }
 
 void Ppu::refreshOpenBus(u8 value)

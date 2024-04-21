@@ -7,13 +7,17 @@
 #include "OamData.hpp"
 #include "Cartridge.hpp"
 #include "PpuRegisters.hpp"
-#include "Framebuffer.hpp"
 
 class Ppu
 {
     public:
+        static constexpr const unsigned SCREEN_WIDTH = 256;
+        static constexpr const unsigned SCREEN_HEIGHT = 240;
+        static constexpr const unsigned BUFFER_SIZE = SCREEN_WIDTH * SCREEN_HEIGHT;
+
+        using Framebuffer = std::array<u8, BUFFER_SIZE>;
+
         Ppu(const std::shared_ptr<Cartridge>& cartridge,
-            const std::shared_ptr<Framebuffer>& framebuffer,
             const std::function<void()>& nmiTriggerCallback,
             const std::function<void()>& vblankInterruptCallback);
 
@@ -25,11 +29,12 @@ class Ppu
 
         void tick();
 
-        u8 getColorFromPalette(u8 palleteId, u8 pixel);
+        const Framebuffer& getFramebuffer();
 
     private:
         std::shared_ptr<Cartridge> cartridge;
-        std::shared_ptr<Framebuffer> framebuffer;
+        std::array<u8, BUFFER_SIZE> framebuffer;
+
         PpuRegisters registers;
 
         unsigned openBusDecayTimer;
