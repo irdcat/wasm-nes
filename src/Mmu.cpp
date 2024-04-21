@@ -56,8 +56,16 @@ void Mmu::signalReset(bool signal)
     resetSignalled = signal;
 }
 
+unsigned Mmu::getAndResetTickCounterValue()
+{
+    auto old = tickCounter;
+    tickCounter = 0;
+    return old;
+}
+
 void Mmu::tick()
 {
+    tickCounter++;
     for(auto i = 0; i < 3; i++) {
         ppu->tick();
     }

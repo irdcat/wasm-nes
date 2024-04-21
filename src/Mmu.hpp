@@ -21,6 +21,8 @@ class Mmu
 
         void signalReset(bool signal);
 
+        unsigned getAndResetTickCounterValue();
+
     private:
         std::shared_ptr<Ppu> ppu;
         std::shared_ptr<Cartridge> cartridge;
@@ -28,4 +30,6 @@ class Mmu
         bool resetSignalled;
 
         void tick();
+
+        unsigned tickCounter;
 };
