@@ -6,7 +6,6 @@ Emulator::Emulator()
     : shouldRun(false)
 {
     cartridge = std::make_shared<Cartridge>();
-    ppuFramebuffer = std::make_shared<Framebuffer>();
     
     auto nmiTriggerCallback = [this](){
         cpu->interrupt(InterruptType::NMI);
@@ -17,52 +16,21 @@ Emulator::Emulator()
         render();
     };
 
-    ppu = std::make_shared<Ppu>(cartridge, ppuFramebuffer, nmiTriggerCallback, vblankInterruptCallback);
+    ppu = std::make_shared<Ppu>(cartridge, nmiTriggerCallback, vblankInterruptCallback);
     mmu = std::make_shared<Mmu>(ppu, cartridge);
     cpu = std::make_shared<Cpu>(mmu);
 
-    window = make_sdl_resource(
-        SDL_CreateWindow, 
-        SDL_DestroyWindow, 
-        "Wasm-NES",
-        SDL_WINDOWPOS_CENTERED,
-        SDL_WINDOWPOS_CENTERED,
-        DISPLAY_WIDTH * PIXEL_SIZE,
-        DISPLAY_HEIGHT * PIXEL_SIZE,
-        SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+    window = make_sdl_resource(SDL_CreateWindow, SDL_DestroyWindow, "Wasm-NES",
+        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+        Ppu::SCREEN_WIDTH * PIXEL_SIZE, Ppu::SCREEN_HEIGHT * PIXEL_SIZE, SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
 
-    if(!window) {
-        std::cerr << "Failed to initialize SDL Window" << std::endl;
-        return;
-    }
-
-    renderer = make_sdl_resource(
-        SDL_CreateRenderer,
-        SDL_DestroyRenderer,
-        window.get(),
-        -1,
-        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-
-    if(!renderer) {
-        std::cerr << "Failed to initialize SDL Renderer" << std::endl;
-        return;
-    }
+    renderer = make_sdl_resource(SDL_CreateRenderer, SDL_DestroyRenderer, window.get(),
+        -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
     SDL_RenderSetLogicalSize(renderer.get(), DISPLAY_WIDTH * PIXEL_SIZE, DISPLAY_HEIGHT * PIXEL_SIZE);
 
-    texture = make_sdl_resource(
-        SDL_CreateTexture,
-        SDL_DestroyTexture,
-        renderer.get(),
-        SDL_PIXELFORMAT_RGBA32,
-        SDL_TEXTUREACCESS_STREAMING,
-        DISPLAY_WIDTH,
-        DISPLAY_HEIGHT);
-
-    if(!texture) {
-        std::cerr << "Failed to initialize SDL Texture" << std::endl;
-        return;
-    }
+    texture = make_sdl_resource(SDL_CreateTexture, SDL_DestroyTexture, renderer.get(),
+        SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, Ppu::SCREEN_WIDTH, Ppu::SCREEN_HEIGHT);
 
     u32 format = 0;
     SDL_QueryTexture(texture.get(), &format, nullptr, nullptr, nullptr);
@@ -174,7 +142,7 @@ void Emulator::update(u32 millisElapsed)
 
 void Emulator::render()
 {
-    auto viewport = SDL_Rect{ 0, 0, DISPLAY_WIDTH * PIXEL_SIZE, DISPLAY_HEIGHT * PIXEL_SIZE };
+    auto viewport = SDL_Rect{ 0, 0, Ppu::SCREEN_WIDTH * PIXEL_SIZE, Ppu::SCREEN_HEIGHT * PIXEL_SIZE };
     SDL_RenderClear(renderer.get());
     SDL_RenderCopy(renderer.get(), texture.get(), nullptr, &viewport);
     SDL_RenderPresent(renderer.get());
@@ -189,12 +157,9 @@ void Emulator::updateScreen()
 {
     u32* renderBuffer = nullptr;
     SDL_LockTexture(texture.get(), nullptr, reinterpret_cast<void**>(&renderBuffer), nullptr);
-    for(auto x = 0; x < DISPLAY_WIDTH; x++) {
-        for(auto y = 0; y < DISPLAY_HEIGHT; y++) {
-            auto nesColorIndex = ppuFramebuffer->getColor(x, y);
-            const unsigned renderBufferIndex = y * DISPLAY_WIDTH + x;
-            renderBuffer[renderBufferIndex] = colors[nesColorIndex]; 
-        }
+    const auto framebuffer = ppu->getFramebuffer();
+    for(auto i = 0; i < framebuffer.size(); i++) {
+        renderBuffer[i] = colors[framebuffer[i]];
     }
     SDL_UnlockTexture(texture.get());
 }

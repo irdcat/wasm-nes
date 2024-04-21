@@ -8,23 +8,21 @@ if(EMSCRIPTEN)
         src/Ppu.cpp
         src/Cartridge.cpp
         src/Emulator.cpp
-        src/Framebuffer.cpp
         src/main.cpp)
     set(CMAKE_EXECUTABLE_SUFFIX ".js")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -O3")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -g")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sWASM=1 -sALLOW_MEMORY_GROWTH=1 -sUSE_SDL=2 -sFORCE_FILESYSTEM=1")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sEXPORTED_FUNCTIONS=[_main,_loadRom] -sEXPORTED_RUNTIME_METHODS=ccall")
     
     add_executable(wasm-nes ${APP_SOURCES})
 endif()
 
-if(NOT EMSCRIPTEN)
+if(NOT EMSCRIPTEN AND TESTS)
     set(APP_LIB_SOURCES
         src/Cpu.cpp
         src/Mmu.cpp
         src/Ppu.cpp
-        src/Cartridge.cpp
-        src/Framebuffer.cpp)
+        src/Cartridge.cpp)
     set(TEST_SOURCES
         tests/util/SystemUnderTest.cpp
         tests/util/IntegrationTest.cpp
