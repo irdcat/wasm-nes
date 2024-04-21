@@ -7,13 +7,13 @@
 #include "OamData.hpp"
 #include "Cartridge.hpp"
 #include "PpuRegisters.hpp"
-#include "PpuFramebuffer.hpp"
+#include "Framebuffer.hpp"
 
 class Ppu
 {
     public:
         Ppu(const std::shared_ptr<Cartridge>& cartridge,
-            const std::shared_ptr<PpuFramebuffer>& framebuffer,
+            const std::shared_ptr<Framebuffer>& framebuffer,
             const std::function<void()>& nmiTriggerCallback,
             const std::function<void()>& vblankInterruptCallback);
 
@@ -29,7 +29,7 @@ class Ppu
 
     private:
         std::shared_ptr<Cartridge> cartridge;
-        std::shared_ptr<PpuFramebuffer> framebuffer;
+        std::shared_ptr<Framebuffer> framebuffer;
         PpuRegisters registers;
 
         unsigned openBusDecayTimer;

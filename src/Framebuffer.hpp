@@ -4,10 +4,10 @@
 
 #include <array>
 
-class PpuFramebuffer
+class Framebuffer
 {
     public:
-        PpuFramebuffer() = default;
+        Framebuffer() = default;
 
         void setColor(unsigned x, unsigned y, u8 colorIndex);
 

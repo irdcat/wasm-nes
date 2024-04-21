@@ -8,8 +8,7 @@ if(EMSCRIPTEN)
         src/Ppu.cpp
         src/Cartridge.cpp
         src/Emulator.cpp
-        src/PpuFramebuffer.cpp
-        src/SdlColor.cpp
+        src/Framebuffer.cpp
         src/main.cpp)
     set(CMAKE_EXECUTABLE_SUFFIX ".js")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -O3")
@@ -25,7 +24,7 @@ if(NOT EMSCRIPTEN)
         src/Mmu.cpp
         src/Ppu.cpp
         src/Cartridge.cpp
-        src/PpuFramebuffer.cpp)
+        src/Framebuffer.cpp)
     set(TEST_SOURCES
         tests/util/SystemUnderTest.cpp
         tests/util/IntegrationTest.cpp
