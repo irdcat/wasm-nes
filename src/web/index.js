@@ -14,7 +14,7 @@ function runRom(e) {
     const resultByteArray = new Uint8Array(result);
     const memFsFilename = "rom.nes"
     FS.writeFile(memFsFilename, resultByteArray);
-    Module.ccall('loadRom', null, ['string'], [memFsFilename]);
+    Module.ccall('loadRom', null, ['string'], [memFsFilename], { async: true });
 }
 
 /**
@@ -27,6 +27,7 @@ var Module = {
         // Workaround to avoid DaisyUI styles being overwritten by style element inserted into head by Tailwind script 
         let daisyUiStylesheet = document.querySelector("link");
         document.querySelector("head").appendChild(daisyUiStylesheet);
+        Module.ccall('run', null, null, null);
     },
     
     canvas: (function(){

@@ -12,31 +12,27 @@ extern "C"
         auto filenameString = std::string(filename);
         emulator.loadRom(filenameString);
     }
-}
 
-void mainLoop()
-{
-    static const constexpr u64 FRAME_PERIOD_MILLIS = 1000 / 60;
-
-    u64 currentTime;
-    u64 deltaTime;
-    u64 lastTime = 0;
-    if(emulator.shouldBeRunning()) {
-        currentTime = SDL_GetTicks64();
-        deltaTime = currentTime - lastTime;
-        emulator.handleInput();
-        emulator.update(deltaTime);
-        lastTime = currentTime;
+    EMSCRIPTEN_KEEPALIVE void run()
+    {
+        if(SDL_Init(SDL_INIT_VIDEO) != 0) {
+            std::cerr << "Failed to initialize SDL Video" << std::endl;
+            return;
+        }
+        u64 currentTime;
+        u64 deltaTime;
+        u64 lastTime = 0;
+        while(emulator.shouldBeRunning())
+        {
+            currentTime = SDL_GetTicks64();
+            deltaTime = currentTime - lastTime;
+            emulator.handleInput();
+            emulator.update(deltaTime);
+            emulator.render();
+            lastTime = currentTime;
+            emscripten_sleep(deltaTime > 16 ? 0 : 16 - deltaTime);
+        }
+        SDL_Quit();
+        return;
     }
-}
-
-int main()
-{
-    if(SDL_Init(SDL_INIT_VIDEO) != 0) {
-        std::cerr << "Failed to initialize SDL Video" << std::endl;
-        return 0;
-    }
-    emscripten_set_main_loop(mainLoop, 0, 1);
-    SDL_Quit();
-    return 0;
 }
