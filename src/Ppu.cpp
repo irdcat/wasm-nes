@@ -2,7 +2,7 @@
 #include "Cpu.hpp"
 
 Ppu::Ppu(const std::shared_ptr<Cartridge>& cartridge, 
-    const std::shared_ptr<PpuFramebuffer>& framebuffer,
+    const std::shared_ptr<Framebuffer>& framebuffer,
     const std::function<void()>& nmiTriggerCallback,
     const std::function<void()>& vblankInterruptCallback)
     : cartridge(cartridge)

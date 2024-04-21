@@ -4,7 +4,7 @@
 #include "Mmu.hpp"
 #include "Ppu.hpp"
 #include "Cartridge.hpp"
-#include "PpuFramebuffer.hpp"
+#include "Framebuffer.hpp"
 #include "SdlResource.hpp"
 
 class Emulator
@@ -31,7 +31,7 @@ class Emulator
         std::shared_ptr<Mmu> mmu;
         std::shared_ptr<Ppu> ppu;
         std::shared_ptr<Cartridge> cartridge;
-        std::shared_ptr<PpuFramebuffer> ppuFramebuffer;
+        std::shared_ptr<Framebuffer> ppuFramebuffer;
 
         bool shouldRun;
 
@@ -40,6 +40,8 @@ class Emulator
         SdlResource<SDL_Renderer> renderer;
 
         void updateScreen();
+
+        std::array<u32, 64> colors;
 
         static constexpr const unsigned DISPLAY_WIDTH = 256;
         static constexpr const unsigned DISPLAY_HEIGHT = 240;
