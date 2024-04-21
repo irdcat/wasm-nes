@@ -88,7 +88,7 @@ const std::vector<u8>& Cartridge::getChrRom()
 u8 &Cartridge::memoryRef(u16 addr)
 {
     static u8 dummyByte = 0;
-    if (addr < 0x2000) {
+    if (addr < 0x2000 && chrRom.size() != 0) {
         return chrRom[addr % chrRom.size()];
     } else if (addr < 0x3F00) {
         if(addr >= 0x3000) {
@@ -101,7 +101,7 @@ u8 &Cartridge::memoryRef(u16 addr)
     } else if (addr >= 0x6000 && addr < 0x8000) {
         auto prgRamAddr = (addr - 0x6000) % prgRam.size();
         return prgRam[prgRamAddr];
-    } else if (addr >= 0x8000) {
+    } else if (addr >= 0x8000 && prgRom.size() != 0) {
         auto prgRomAddr = (addr - 0x8000) % prgRom.size();
         return prgRom[prgRomAddr]; 
     }

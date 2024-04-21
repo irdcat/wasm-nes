@@ -13,7 +13,6 @@ Emulator::Emulator()
 
     auto vblankInterruptCallback = [this](){
         updateScreen();
-        render();
     };
 
     ppu = std::make_shared<Ppu>(cartridge, nmiTriggerCallback, vblankInterruptCallback);
@@ -112,7 +111,7 @@ void Emulator::reset()
 void Emulator::loadRom(const std::string &filename)
 {
     auto file = std::ifstream(filename, std::ios::binary);
-    shouldRun = cartridge->loadFromFile(std::move(file));
+    cartridge->loadFromFile(std::move(file));
     reset();
 }
 
@@ -150,7 +149,7 @@ void Emulator::render()
 
 bool Emulator::shouldBeRunning() const
 {
-    return shouldRun && window && renderer && texture;
+    return window && renderer && texture;
 }
 
 void Emulator::updateScreen()
