@@ -16,6 +16,7 @@ Ppu::Ppu(const std::shared_ptr<Cartridge>& cartridge,
     , evenOddFrameToggle(false)
     , patternTableAddress(0)
     , attributeTableAddress(0)
+    , nametableAddress(0)
     , tilePattern(0)
     , tileAttributes(0)
     , bgShiftPattern(0)
@@ -186,7 +187,7 @@ void Ppu::decodeTiles()
     switch (renderingPositionX % 8)
     {
         case 0: // Point to nametable
-            attributeTableAddress = 0x2000 + (vaddr.raw & 0xFFF);
+            nametableAddress = 0x2000 + (vaddr.raw & 0xFFF);
             if(renderingPositionX == 0) {
                 spritePrimaryOamPosition = 0;
                 spriteSecondaryOamPosition = 0;
@@ -211,7 +212,7 @@ void Ppu::decodeTiles()
                 scanlineEndPosition = 340;
             }
             patternTableAddress = 0x1000 * ppuCtrl.backgroundPatternTableAddress;
-            patternTableAddress += (ppuRead(attributeTableAddress) << 4) + vaddr.fineY;
+            patternTableAddress += (ppuRead(nametableAddress) << 4) + vaddr.fineY;
             if(shouldDecodeTile) {
                 bgShiftPattern = (bgShiftPattern >> 16) | 0x00010000 * tilePattern;
                 bgShiftAttributes = (bgShiftAttributes >> 16) | tileAttributes * 0x55550000;
@@ -222,8 +223,6 @@ void Ppu::decodeTiles()
             if(shouldDecodeTile) {
                 attributeTableAddress = 0x23C0 | (vaddr.baseNametable << 11) 
                     | ((vaddr.coarseY >> 2) << 3) | (vaddr.coarseX >> 2);
-            } else {
-                attributeTableAddress = 0x2000 | (vaddr.raw & 0xFFF);
             }
             break;
 

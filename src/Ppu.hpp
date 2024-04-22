@@ -48,6 +48,7 @@ class Ppu
         
         u16 patternTableAddress;
         u16 attributeTableAddress;
+        u16 nametableAddress;
         
         u16 tilePattern;
         u16 tileAttributes;
