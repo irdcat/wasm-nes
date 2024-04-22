@@ -73,8 +73,8 @@ class Ppu
         void incrementScrollX();
         void incrementScrollY();
 
-        void renderingTick();
-        void spriteEvaluation();
+        void decodeTiles();
+        void evaluateSprites();
         void renderPixel();
 
         void refreshOpenBus(u8 value);
