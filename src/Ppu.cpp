@@ -109,7 +109,8 @@ void Ppu::tick()
 
     if(scanline < 240) {
         if(registers.ppuMask.showBgSp) {
-            renderingTick();
+            decodeTiles();
+            evaluateSprites();
         }
         if(scanline != -1 && renderingPositionX < 256) {
             renderPixel();
@@ -171,7 +172,7 @@ void Ppu::incrementScrollY()
     }
 }
 
-void Ppu::renderingTick()
+void Ppu::decodeTiles()
 {
     auto shouldDecodeTile = (renderingPositionX >= 0 && renderingPositionX <= 255) 
         || (renderingPositionX >= 320 && renderingPositionX <= 335);
@@ -260,10 +261,9 @@ void Ppu::renderingTick()
         default:
             break;
     }
-    spriteEvaluation();
 }
 
-void Ppu::spriteEvaluation()
+void Ppu::evaluateSprites()
 {
     auto& ppuCtrl = registers.ppuCtrl;
     auto& ppuStatus = registers.ppuStatus;
