@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <vector>
+#include <memory>
 #include <array>
 
 #include "Types.hpp"
@@ -29,4 +30,26 @@ class Cartridge
         bool usesChrRamInsteadOfChrRom;
 
         u8& memoryRef(u16 addr);
+
+        enum class MirroringType
+        {
+            Horizontal,
+            Vertical,
+            FourScreen
+        };
+
+        struct NesHeaderData
+        {
+            unsigned prgRomBanks;
+            unsigned chrRomBanks;
+            unsigned mapperNo;
+            bool persistentMemory;
+            bool trainer;
+            MirroringType mirroring;
+        };
+
+        using NesHeader = std::array<u8, 16>;
+
+        std::unique_ptr<NesHeaderData> parseNesHeader(const NesHeader& nesHeader);
+        bool isValidNesHeader(const NesHeader& nesHeader);
 };

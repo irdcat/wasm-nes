@@ -1,5 +1,4 @@
 #include "Cartridge.hpp"
-#include "NesHeaderData.hpp"
 
 bool Cartridge::loadFromFile(std::ifstream file)
 {
@@ -10,34 +9,19 @@ bool Cartridge::loadFromFile(std::ifstream file)
     std::array<u8, 16> headerData;
     file.read(reinterpret_cast<char*>(&headerData[0]), 16);
 
-    if(std::string(&headerData[0], &headerData[4]) != "NES\x1A") {
-        return false;
-    }
+    auto nesHeaderData = parseNesHeader(headerData);
 
-    auto flags6 = headerData[6];
-    auto flags7 = headerData[7];
-    
-    using enum MirroringType;
-
-    NesHeaderData nesHeaderData = {
-        .prgRomBanks = headerData[4],
-        .chrRomBanks = headerData[5],
-        .mapperNo = static_cast<unsigned>((flags6 >> 4) | (flags7 & 0xF0)),
-        .persistentMemory = static_cast<bool>(((flags6 & 0x2) >> 1)),
-        .trainer = static_cast<bool>(((flags6 & 0x4) >> 2)),
-        .mirroring = ((flags6 & 0x8) >> 3) ? FourScreen : ((flags6 & 0x1) ? Horizontal : Vertical)
-    };
-
-    prgRom.resize(nesHeaderData.prgRomBanks * 0x4000);
-    if(nesHeaderData.chrRomBanks > 0) {
-        chrRom.resize(nesHeaderData.chrRomBanks * 0x2000);
+    prgRom.resize(nesHeaderData->prgRomBanks * 0x4000);
+    if(nesHeaderData->chrRomBanks > 0) {
+        chrRom.resize(nesHeaderData->chrRomBanks * 0x2000);
         usesChrRamInsteadOfChrRom = false;
     } else {
         chrRom.resize(0x2000);
         usesChrRamInsteadOfChrRom = true;
     }
 
-    switch (nesHeaderData.mirroring)
+    using enum MirroringType;
+    switch (nesHeaderData->mirroring)
     {
         case Horizontal:
             nta[0] = nta[1] = 0;
@@ -52,7 +36,7 @@ bool Cartridge::loadFromFile(std::ifstream file)
             break;
     }
 
-    if(nesHeaderData.trainer) {
+    if(nesHeaderData->trainer) {
         file.ignore(512);
     }
 
@@ -107,4 +91,31 @@ u8 &Cartridge::memoryRef(u16 addr)
     }
 
     return dummyByte;
+}
+
+std::unique_ptr<Cartridge::NesHeaderData> Cartridge::parseNesHeader(const NesHeader &nesHeader)
+{
+    using enum MirroringType;
+    if(!isValidNesHeader(nesHeader)) {
+        return std::unique_ptr<NesHeaderData>(nullptr);
+    }
+    auto flags6 = nesHeader[6];
+    auto flags7 = nesHeader[7];
+
+    NesHeaderData headerData = {
+        .prgRomBanks = nesHeader[4],
+        .chrRomBanks = nesHeader[5],
+        .mapperNo = static_cast<unsigned>((flags6 >> 4) | (flags7 & 0xF0)),
+        .persistentMemory = static_cast<bool>(((flags6 & 0x2) >> 1)),
+        .trainer = static_cast<bool>(((flags6 & 0x4) >> 2)),
+        .mirroring = ((flags6 & 0x8) >> 3) ? FourScreen : ((flags6 & 0x1) ? Horizontal : Vertical)
+    };
+
+    return std::make_unique<NesHeaderData>(headerData);
+}
+
+bool Cartridge::isValidNesHeader(const NesHeader &nesHeader)
+{
+    // So far only iNES 1.0 header is supported
+    return std::string(&nesHeader[0], &nesHeader[4]) == "NES\x1A";
 }
