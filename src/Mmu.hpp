@@ -6,6 +6,10 @@
 #include <memory>
 #include <array>
 
+/**
+ * MMU - Memory Mapping Unit.
+ * This class represents main bus used by the CPU that connects it with the memory and other peripherials. 
+ */
 class Mmu
 {
     public:
