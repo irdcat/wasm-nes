@@ -5,6 +5,7 @@
 Emulator::Emulator()
     : shouldRun(false)
 {
+    controllers = std::make_shared<Controllers>();
     cartridge = std::make_shared<Cartridge>();
     
     auto nmiTriggerCallback = [this](){
@@ -16,7 +17,7 @@ Emulator::Emulator()
     };
 
     ppu = std::make_shared<Ppu>(cartridge, nmiTriggerCallback, vblankInterruptCallback);
-    mmu = std::make_shared<Mmu>(ppu, cartridge);
+    mmu = std::make_shared<Mmu>(ppu, cartridge, controllers);
     cpu = std::make_shared<Cpu>(mmu);
 
     window = make_sdl_resource(SDL_CreateWindow, SDL_DestroyWindow, "Wasm-NES",
@@ -122,7 +123,10 @@ void Emulator::handleInput()
         if(event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
             auto key = event.key.keysym.scancode;
             auto pressed = event.type == SDL_KEYDOWN;
-            // TODO: Handling key events
+            auto nesIndex = sdlKeyToNesIndex(key);
+            if(nesIndex != 0xFF) {
+                controllers->updateKeyPressStatus(0, nesIndex, pressed);
+            }
         } else if(event.type == SDL_QUIT) {
             shouldRun = false;
         }
@@ -161,4 +165,25 @@ void Emulator::updateScreen()
         renderBuffer[i] = colors[framebuffer[i]];
     }
     SDL_UnlockTexture(texture.get());
+}
+
+u8 Emulator::sdlKeyToNesIndex(SDL_Scancode scancode)
+{
+    u8 result = 0xFF;
+    std::array<SDL_Scancode, 8> scancodes = {
+        SDL_SCANCODE_Z,
+        SDL_SCANCODE_X,
+        SDL_SCANCODE_SPACE,
+        SDL_SCANCODE_RETURN,
+        SDL_SCANCODE_UP,
+        SDL_SCANCODE_DOWN,
+        SDL_SCANCODE_LEFT,
+        SDL_SCANCODE_RIGHT
+    };
+    for(auto i = 0; i < scancodes.size(); i++) {
+        if(scancode == scancodes[i]) {
+            return i;
+        }
+    }
+    return result;
 }

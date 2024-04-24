@@ -3,6 +3,7 @@
 #include "Types.hpp"
 #include "Ppu.hpp"
 #include "Cartridge.hpp"
+#include "Controllers.hpp"
 #include <memory>
 #include <array>
 
@@ -15,7 +16,9 @@ class Mmu
     public:
         Mmu();
 
-        Mmu(const std::shared_ptr<Ppu>& ppu, const std::shared_ptr<Cartridge>& cartridge);
+        Mmu(const std::shared_ptr<Ppu>& ppu, 
+            const std::shared_ptr<Cartridge>& cartridge,
+            const std::shared_ptr<Controllers>& controllers);
 
         virtual ~Mmu() = default;
 
@@ -30,6 +33,7 @@ class Mmu
     private:
         std::shared_ptr<Ppu> ppu;
         std::shared_ptr<Cartridge> cartridge;
+        std::shared_ptr<Controllers> controllers;
         std::array<u8, 0x800> internalRam;
         bool resetSignalled;
 

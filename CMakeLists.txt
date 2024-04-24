@@ -7,6 +7,7 @@ if(EMSCRIPTEN)
         src/Mmu.cpp
         src/Ppu.cpp
         src/Cartridge.cpp
+        src/Controllers.cpp
         src/Emulator.cpp
         src/main.cpp)
     set(CMAKE_EXECUTABLE_SUFFIX ".js")
@@ -22,7 +23,8 @@ if(NOT EMSCRIPTEN AND TESTS)
         src/Cpu.cpp
         src/Mmu.cpp
         src/Ppu.cpp
-        src/Cartridge.cpp)
+        src/Cartridge.cpp
+        src/Controllers.cpp)
     set(TEST_SOURCES
         tests/util/SystemUnderTest.cpp
         tests/util/IntegrationTest.cpp

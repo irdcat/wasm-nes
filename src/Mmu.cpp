@@ -5,8 +5,8 @@ Mmu::Mmu()
 {
 }
 
-Mmu::Mmu(const std::shared_ptr<Ppu> &ppu, const std::shared_ptr<Cartridge> &cartridge)
-    : ppu(ppu), cartridge(cartridge), internalRam(), resetSignalled(false)
+Mmu::Mmu(const std::shared_ptr<Ppu> &ppu, const std::shared_ptr<Cartridge> &cartridge, const std::shared_ptr<Controllers>& controllers)
+    : ppu(ppu), cartridge(cartridge), controllers(controllers), internalRam(), resetSignalled(false), tickCounter(0)
 {
 }
 
@@ -37,7 +37,14 @@ u8 Mmu::readFromMemory(u16 addr)
         // inside 8KB address space.
         result = ppu->read(addr & 7);
     } else if(addr < 0x4018) {
-        // TODO: Readable MMIO Registers
+        auto mmioAddr = addr & 0x1F;
+        switch(mmioAddr) {
+            case 0x16:
+            case 0x17:
+                result = controllers->read(mmioAddr & 0x1);
+            default:
+                break;
+        }
     } else {
         // The rest of the address space belongs to the cartridge, but some of it is unused
         result = cartridge->read(addr);
@@ -73,25 +80,33 @@ void Mmu::writeIntoMemory(u16 addr, u8 value)
         ppu->write(addr & 7, value);
     } else if(addr < 0x4018) {
         auto mmioAddr = addr & 0x1F;
-        // Register under the address 0x4014 is a write-only OAM DMA register
-        // It doesn't hold any value and it's purpose is to trigger process called OAM DMA
-        // What it does is it tells the system to copy whole page of RAM memory (256 bytes)
-        // into PPU's OAM (Object Attribute Memory) 
-        // which holds informations about sprites to be rendered.
-        // Page is specified by value that is written to the OAM DMA address.
-        if(mmioAddr == 0x14) {
-            // Due to the behaviour of DMA (Direct Memory Access) unit, 
-            // before proceeding with copying DMA attempts to halt the CPU which causes a delay of up to 3 CPU cycles.
-            // Amount of cycles it takes to halt the CPU depends on instruction which triggers DMA.
-            // This behaviour is not implemented here and whole process is kept to take constant 512 cycles in total.
-            const u16 OAMDATA_ADDRESS = 0x2004;
-            const u16 PAGE_START = (value & 7) * 0x100;
-            const u16 PAGE_END = PAGE_START + 0xFF;
-            for(u16 dmaAddress = PAGE_START; dmaAddress <= PAGE_END; dmaAddress++) {
-                writeIntoMemory(OAMDATA_ADDRESS, readFromMemory(dmaAddress));
-            }
+        static const u16 OAMDATA_ADDRESS = 0x2004;
+        static const u16 PAGE_START = (value & 7) * 0x100;
+        static const u16 PAGE_END = PAGE_START + 0xFF;
+        switch(mmioAddr) {
+            // Register under the address 0x4014 is a write-only OAM DMA register
+            // It doesn't hold any value and it's purpose is to trigger process called OAM DMA
+            // What it does is it tells the system to copy whole page of RAM memory (256 bytes)
+            // into PPU's OAM (Object Attribute Memory) 
+            // which holds informations about sprites to be rendered.
+            // Page is specified by value that is written to the OAM DMA address.
+            case 0x14:
+                // Due to the behaviour of DMA (Direct Memory Access) unit, 
+                // before proceeding with copying DMA attempts to halt the CPU which causes a delay of up to 3 CPU cycles.
+                // Amount of cycles it takes to halt the CPU depends on instruction which triggers DMA.
+                // This behaviour is not implemented here and whole process is kept to take constant 512 cycles in total.
+                for(u16 dmaAddress = PAGE_START; dmaAddress <= PAGE_END; dmaAddress++) {
+                    writeIntoMemory(OAMDATA_ADDRESS, readFromMemory(dmaAddress));
+                }
+                break;
+
+            case 0x16:
+                controllers->strobe(value);
+                break;
+            
+            default:
+                break;
         }
-        // TODO: Writable MMIO Registers
     } else {
         // The rest of the address space belongs to the cartridge, but some of it is unused
         cartridge->write(addr, value);

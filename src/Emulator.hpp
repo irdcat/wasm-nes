@@ -4,6 +4,7 @@
 #include "Mmu.hpp"
 #include "Ppu.hpp"
 #include "Cartridge.hpp"
+#include "Controllers.hpp"
 #include "SdlResource.hpp"
 
 class Emulator
@@ -30,6 +31,7 @@ class Emulator
         std::shared_ptr<Mmu> mmu;
         std::shared_ptr<Ppu> ppu;
         std::shared_ptr<Cartridge> cartridge;
+        std::shared_ptr<Controllers> controllers;
 
         bool shouldRun;
 
@@ -38,6 +40,7 @@ class Emulator
         SdlResource<SDL_Renderer> renderer;
 
         void updateScreen();
+        u8 sdlKeyToNesIndex(SDL_Scancode scancode);
 
         std::array<u32, 64> colors;
 
