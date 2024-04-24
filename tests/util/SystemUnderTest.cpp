@@ -1,9 +1,10 @@
 #include "SystemUnderTest.hpp"
 
 SystemUnderTest::SystemUnderTest()
-    : cartridge(std::make_shared<Cartridge>())
+    : controllers(std::make_shared<Controllers>())
+    , cartridge(std::make_shared<Cartridge>())
     , ppu(std::make_shared<Ppu>(cartridge, [&](){ cpu->interrupt(InterruptType::NMI); }, [](){}))
-    , mmu(std::make_shared<Mmu>(ppu, cartridge))
+    , mmu(std::make_shared<Mmu>(ppu, cartridge, controllers))
     , cpu(std::make_unique<Cpu>(mmu))
 {
 }
@@ -26,4 +27,9 @@ Ppu* SystemUnderTest::getPpu()
 Cartridge* SystemUnderTest::getCartridge()
 {
     return cartridge.get();
+}
+
+Controllers* SystemUnderTest::getControllers()
+{
+    return controllers.get();
 }
