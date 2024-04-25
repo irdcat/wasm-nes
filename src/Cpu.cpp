@@ -14,14 +14,21 @@ Cpu::Cpu(const std::shared_ptr<Mmu> &mmu)
     irqPending = false;
 }
 
+/**
+ * Executes CPU step which means either executing next instruction
+ * or servicing requested interrupt. 
+ */
 unsigned Cpu::step()
 {
+    // NMI which is Non-Maskable Interrupt has the highest priority
+    // When it is requested with other interrupts it will skip their servicing.
     if(nmiPending) {
         handleInterrupt(InterruptType::NMI);
         nmiPending = false;
         irqPending = false;
         return mmu->getAndResetTickCounterValue();
     }
+    // IRQ which is Interrupt Request has lower priority than NMI
     if(irqPending) {
         handleInterrupt(InterruptType::IRQ);
         nmiPending = false;
@@ -29,11 +36,21 @@ unsigned Cpu::step()
         return mmu->getAndResetTickCounterValue();
     }
 
+    // Instruction execution consists of 2 steps:
+    // 1. Fetching 1 byte long operation code of the instruction
+    // 2. Decoding and executing operations according to the opcode
+    // 1 CPU cycle which is taken to read byte from memory 
+    // is generally considered part of the instruction "cost" measured in CPU cycles
     auto opcode = fetchOpcode();
     executeInstruction(opcode);
     return mmu->getAndResetTickCounterValue();
 }
 
+/**
+ * Resets the CPU. Reset has its own interrupt associated with itself.
+ * Each ROM should define how it handles the resets by setting proper address at RESET vector location (0xFFFC).
+ * Interrupt vector is an address at which ISR - Interrupt Service Routine is stored. 
+ */
 void Cpu::reset()
 {
     mmu->signalReset(true);
@@ -41,13 +58,31 @@ void Cpu::reset()
     mmu->signalReset(false);
 }
 
+/**
+ * Fetches the opcode from memory. This is equivalent of fetching immediate value from memory. 
+ */
 u8 Cpu::fetchOpcode()
 {
     return fetchImmedate8();
 }
 
+/**
+ * Decodes the opcode and executes instruction accordingly. 
+ * This method also decodes so called "Unofficial opcodes".
+ * Most of them have some operations associated with them,
+ * although these are not officially supported or documented instructions,
+ * but rather side effect of a CPU design which focused on reducing size of
+ * PLA (Programmable Logic Array).
+ */
 void Cpu::executeInstruction(u8 opcode)
 {
+    /**
+     * If CPU is halted it is unable to execute instructions.
+     * This state can be triggered by STP instruction, one of unofficial instructions.
+     * This instruction is an example of a case where some "accidentally" triggered
+     * CPU micro-operations never reset the internal instruction clock, 
+     * thus making it stuck in the middle of instruction execution.
+     */
     if(halted) {
         return;
     }
@@ -312,6 +347,12 @@ void Cpu::executeInstruction(u8 opcode)
     }
 }
 
+/**
+ * Tells the CPU that an external interrupt is being requested.
+ * External interrupt can be requested in the middle of instruction execution,
+ * however it should not be serviced immediately, 
+ * but rather before attempting to fetch and execute next instruction.
+ */
 void Cpu::interrupt(InterruptType type)
 {
     switch(type) {
@@ -331,22 +372,41 @@ CpuRegisters &Cpu::getRegisters()
     return registers;
 }
 
+/**
+ * Handles requested interrupt. CPU has 4 types of interrupts: 
+ * BRK - Break. Software interrupt triggered by BRK instruction. Has the same vector as IRQ.
+ * IRQ - Interrupt Request. External interrupt which in the case of NES may come from APU or Cartridge with particular mappers.
+ *       This one can be disabled by setting Interrupt Disable flag of CPU Processor Status register.
+ * NMI - Non-maskable Interrupt. External interrupt which in the case of NES comes from PPU.
+ *       This one cannot be disabled on the CPU side.
+ * RESET - Interrupt associated with resetting the CPU.
+ */
 void Cpu::handleInterrupt(InterruptType type)
 {
+    // If IRQ is handled but it's servicing is disabled 
+    // then stop further execution of this method.
     if(registers.p.interruptDisable && type == InterruptType::IRQ) {
         return;
     }
 
+    // BRK and RESET are performing additional dummy read from memory.
+    // Also special "Break flag" (Bit 4 of Processor Status) is set,
+    // before pushing Processor Status register value to the stack.
     if(type == InterruptType::BRK || type == InterruptType::RESET) {
         fetchImmedate8();
         registers.p.breakFlag = type == InterruptType::BRK;
     }
 
+    // Push Program Counter and Processor Status to the stack.
     pushIntoStack16(registers.pc);
     pushIntoStack8(registers.p);
 
+    // Every interrupt disables maskable interrupts,
+    // so after execution of any ISR they have to be re-enabled
     registers.p.interruptDisable = true;
 
+    // Each interrupt has interrupt vector location associated with itself.
+    // CPU expect that under this location, memory will hold address of the ISR.
     u16 interruptVectorLocation = 0;
     switch(type) {
         case InterruptType::NMI:
@@ -360,32 +420,53 @@ void Cpu::handleInterrupt(InterruptType type)
             break;
     }
     
+    // Read Interrupt Vector and jump to it.
     u16 interruptVector = mmu->readFromMemory(interruptVectorLocation) 
         | (mmu->readFromMemory(interruptVectorLocation + 1) << 8);
     registers.pc = interruptVector;
 }
 
+/**
+ * Fetches the immediate 8-bit value from the memory from the address pointed by Program Counter.
+ * Then Program Counter is incremented. 
+ */
 u8 Cpu::fetchImmedate8()
 {
     return mmu->readFromMemory(registers.pc++);
 }
 
+/**
+ * Fetches the immediate 16-bit value from memory from the address pointed by Program Counter.
+ * The value is Little Endian. Program Counter is incremented by 2 afterwards.
+ */
 u16 Cpu::fetchImmedate16()
 {
     return static_cast<u16>(fetchImmedate8()) 
         + static_cast<u16>(fetchImmedate8() << 8);
 }
 
+/**
+ * Pops 8-bit value from stack. Before reading the Stack Pointer is incremented.
+ * Stack is located in the second page of the RAM (0x100 - 0x1FF as the page numbers start from 0).
+ */
 u8 Cpu::popFromStack8()
 {
     return mmu->readFromMemory(0x100 | ++registers.s);
 }
 
+/**
+ * Pushes 8-bit value to stack. After writing Stack Pointer is decremented. 
+ * Stack is located in the second page of the RAM (0x100 - 0x1FF as the page numbers start from 0).
+ */
 void Cpu::pushIntoStack8(u8 value)
 {
     mmu->writeIntoMemory(0x100 | registers.s--, value);
 }
 
+/**
+ * Pops 16-bit value from the stack. 
+ * Although CPU is Little Endian, order of the bytes in the memory will be reversed.
+ */
 u16 Cpu::popFromStack16()
 {
     u8 low = popFromStack8();
@@ -393,17 +474,27 @@ u16 Cpu::popFromStack16()
     return high << 8 | low;
 }
 
+/**
+ * Pushes 16-bit value to the stack. 
+ * Although CPU is Little Endian, order of the bytes in the memory will be reversed.
+ */
 void Cpu::pushIntoStack16(u16 value)
 {
     pushIntoStack8(value >> 8);
     pushIntoStack8(value & 0xFF);
 }
 
+/**
+ * Helper method that updates Processor Status zero flag whenever value passed to the method is equal to 0. 
+ */
 void Cpu::updateZeroFlag(auto value)
 {
     registers.p.zero = value == 0;
 }
 
+/**
+ * Helper method that updates Processor Status negative flag whenever value passed to the method is negative (bit 7 is set). 
+ */
 void Cpu::updateNegativeFlag(auto value)
 {
     registers.p.negative = (value >> 7) & 0x1;
