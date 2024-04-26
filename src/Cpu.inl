@@ -1,3 +1,10 @@
+/**
+ * One of the type of instruction is Read instruction.
+ * It involves reading operand from memory to store it in the register 
+ * and optionally performing operations in between of that.
+ * Purpose of this method is resolving operand that is to be read from memory,
+ * depending on Addressing Mode, while handling repeating patterns of bus activity (e.g. dummy reads).
+ */
 template <AddressingMode Mode>
 inline u8 Cpu::resolveReadOperand()
 {
@@ -53,6 +60,13 @@ inline u8 Cpu::resolveReadOperand()
     return result;
 }
 
+/**
+ * One of the type of instruction is Write instruction.
+ * It involves writing register value into memory. 
+ * and optionally performing operations in between of that.
+ * Purpose of this method is resolving address to be used while writing into memory,
+ * depending on Addressing Mode, while handling repeating patterns of bus activity (e.g. dummy reads).
+ */
 template <AddressingMode Mode>
 inline u16 Cpu::resolveWriteAddress()
 {
@@ -96,6 +110,10 @@ inline u16 Cpu::resolveWriteAddress()
     return result;
 }
 
+/**
+ * Instructions with Implied addressing have their own repeating pattern of bus activity,
+ * before performing actual operation.
+ */
 template <AddressingMode Mode>
 inline void Cpu::executeImplied(const std::function<void()> &op)
 {
@@ -104,6 +122,11 @@ inline void Cpu::executeImplied(const std::function<void()> &op)
     op();
 }
 
+/**
+ * Branch instructions are sharing same behaviour when it comes to bus activity.
+ * They may execute extra dummy reads depending on whether branch condition is met, 
+ * or memory page boundary was crossed while taking a branch. 
+ */
 template <AddressingMode Mode>
 inline void Cpu::executeBranchInstruction(bool condition)
 {
@@ -119,6 +142,12 @@ inline void Cpu::executeBranchInstruction(bool condition)
     }
 }
 
+/**
+ * One of the type of instruction is Read-Modify-Write instruction.
+ * It involves reading register or memory value, modifying it and writing modified value.
+ * Purpose of this method is resolving address to be used while writing into memory,
+ * depending on Addressing Mode, while handling repeating patterns of bus activity (e.g. dummy reads).
+ */
 template <AddressingMode Mode>
 inline void Cpu::executeReadModifyWrite(const std::function<void(u8&)> &op)
 {
@@ -169,6 +198,10 @@ inline void Cpu::executeReadModifyWrite(const std::function<void(u8&)> &op)
     mmu->writeIntoMemory(address, value);
 }
 
+/**
+ * Accumulator addressing involves it's own special pattern of bus activity.
+ * The rest of characteristics of Read-Modify-Write instructions, stays the same. 
+ */
 template <>
 inline void Cpu::executeReadModifyWrite<AddressingMode::Accumulator>(const std::function<void(u8&)>& op) {
     mmu->readFromMemory(registers.pc);
