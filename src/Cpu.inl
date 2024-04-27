@@ -20,42 +20,34 @@ inline u8 Cpu::resolveReadOperand()
         result = fetchImmedate8();
     } else if constexpr (Mode == Absolute) {
         auto address = fetchImmedate16();
-        result = mmu->readFromMemory(address);
+        result = readFromMemory8(address);
     } else if constexpr (isAbsolute(Mode) && isIndexed(Mode)) {
         auto address = fetchImmedate16();
         auto index = Mode == AbsoluteIndexedX ? registers.x : registers.y;
         auto effectiveAddress = address + index;
-        result = mmu->readFromMemory((address & 0xFF00) | (effectiveAddress & 0xFF));
-        if((address & 0xFF00) != (effectiveAddress & 0xFF00)) {
-            result = mmu->readFromMemory(effectiveAddress);
-        }
+        result = misfire(address, effectiveAddress);
     } else if constexpr (Mode == ZeroPage) {
         auto address = fetchImmedate8();
-        result = mmu->readFromMemory(address);
+        result = readFromMemory8(address);
     } else if constexpr (isZeroPage(Mode) && isIndexed(Mode)) {
         auto address = fetchImmedate8();
         auto index = Mode == ZeroPageIndexedX ? registers.x : registers.y;
-        auto effectiveAddress = (address + index) & 0xFF;
-        mmu->readFromMemory(address);
-        result = mmu->readFromMemory(effectiveAddress);
+        auto effectiveAddress = address + index;
+        readFromZeroPage8(address);
+        result = readFromZeroPage8(effectiveAddress);
     } else if constexpr (Mode == IndirectX) {
         auto pointerAddress = fetchImmedate8();
-        mmu->readFromMemory(pointerAddress);
+        readFromMemory8(pointerAddress);
         auto index = registers.x;
         auto effectivePointerAddress = pointerAddress + index;
-        u16 address = mmu->readFromMemory(effectivePointerAddress & 0xFF) |
-            mmu->readFromMemory((effectivePointerAddress + 1) & 0xFF) << 8;
-        result = mmu->readFromMemory(address);
+        u16 address = readFromZeroPage16(effectivePointerAddress);
+        result = readFromMemory8(address);
     } else if constexpr (Mode == IndirectY) {
         auto pointerAddress = fetchImmedate8();
-        u16 address = mmu->readFromMemory(pointerAddress) |
-            mmu->readFromMemory((pointerAddress + 1) & 0xFF) << 8;
+        u16 address = readFromZeroPage16(address);
         auto index = registers.y;
         auto effectiveAddress = address + index;
-        result = mmu->readFromMemory((address & 0xFF00) | (effectiveAddress & 0xFF));
-        if ((address & 0xFF00) != (effectiveAddress & 0xFF00)) {
-            result = mmu->readFromMemory(effectiveAddress);
-        }
+        result = misfire(address, effectiveAddress);
     }
     return result;
 }
@@ -82,29 +74,27 @@ inline u16 Cpu::resolveWriteAddress()
         auto address = fetchImmedate16();
         auto index = Mode == AbsoluteIndexedX ? registers.x : registers.y;
         auto effectiveAddress = address + index;
-        mmu->readFromMemory((address & 0xFF00) | (effectiveAddress & 0xFF));
+        misread(address, effectiveAddress);
         result = effectiveAddress;
     } else if constexpr (Mode == ZeroPage) {
         result = fetchImmedate8();
     } else if constexpr (isZeroPage(Mode) && isIndexed(Mode)) {
         auto address = fetchImmedate8();
         auto index = Mode == ZeroPageIndexedX ? registers.x : registers.y;
-        mmu->readFromMemory(address);
+        readFromMemory8(address);
         result = (address + index) & 0xFF;
     } else if constexpr (Mode == IndirectX) {
         auto pointerAddress = fetchImmedate8();
-        mmu->readFromMemory(pointerAddress);
+        readFromMemory8(pointerAddress);
         auto index = registers.x;
         auto effectivePointerAddress = pointerAddress + index;
-        result = mmu->readFromMemory(effectivePointerAddress & 0xFF) |
-            mmu->readFromMemory((effectivePointerAddress + 1) & 0xFF) << 8;
+        result = readFromZeroPage16(effectivePointerAddress);
     } else if constexpr (Mode == IndirectY) {
         auto pointerAddress = fetchImmedate8();
-        u16 address = mmu->readFromMemory(pointerAddress) |
-            mmu->readFromMemory((pointerAddress + 1) & 0xFF) << 8;
+        u16 address = readFromZeroPage16(pointerAddress);
         auto index = registers.y;
         auto effectiveAddress = address + index;
-        mmu->readFromMemory((address & 0xFF00) | (effectiveAddress & 0xFF));
+        misread(address, effectiveAddress);
         result = effectiveAddress;
     }
     return result;
@@ -118,7 +108,8 @@ template <AddressingMode Mode>
 inline void Cpu::executeImplied(const std::function<void()> &op)
 {
     static_assert(Mode == AddressingMode::Implied, "Addressing mode other than Implied used in implied instruction");
-    mmu->readFromMemory(registers.pc);
+    // Perform dummy read from current PC position before executing operations
+    readFromMemory8(registers.pc);
     op();
 }
 
@@ -131,14 +122,17 @@ template <AddressingMode Mode>
 inline void Cpu::executeBranchInstruction(bool condition)
 {
     static_assert(Mode == AddressingMode::Relative, "Branch instructions only support Relative addressing");
+    // Reading offset as signed value as destination will be relative to current position in the code.
     s8 offset = fetchImmedate8();
     auto oldPc = registers.pc;
+    // When condition is met, perform dummy read before jumping
     if(condition) {
-        mmu->readFromMemory(registers.pc);
+        readFromMemory8(registers.pc);
         registers.pc += offset;
     }
+    // When page is crossed, perform dummy read
     if((oldPc & 0xFF00) != (registers.pc & 0xFF00)) {
-        mmu->readFromMemory(registers.pc);
+        readFromMemory8(registers.pc);
     }
 }
 
@@ -146,7 +140,7 @@ inline void Cpu::executeBranchInstruction(bool condition)
  * One of the type of instruction is Read-Modify-Write instruction.
  * It involves reading register or memory value, modifying it and writing modified value.
  * Purpose of this method is resolving address to be used while writing into memory,
- * depending on Addressing Mode, while handling repeating patterns of bus activity (e.g. dummy reads).
+ * depending on Addressing Mode, while handling repeating patterns of bus activity (e.g. dummy reads/writes).
  */
 template <AddressingMode Mode>
 inline void Cpu::executeReadModifyWrite(const std::function<void(u8&)> &op)
@@ -160,42 +154,41 @@ inline void Cpu::executeReadModifyWrite(const std::function<void(u8&)> &op)
     u8 value = 0;
     if constexpr (Mode == Absolute) {
         address = fetchImmedate16();
-        value = mmu->readFromMemory(address);
+        value = readFromMemory8(address);
     } else if constexpr (Mode == ZeroPage) {
         address = fetchImmedate8();
-        value = mmu->readFromMemory(address);
+        value = readFromMemory8(address);
     } else if constexpr (isAbsolute(Mode) && isIndexed(Mode)) {
         auto baseAddress = fetchImmedate16();
         auto index = Mode == AbsoluteIndexedX ? registers.x : registers.y;
         address = baseAddress + index;
-        mmu->readFromMemory((baseAddress & 0xFF00) | (address & 0xFF));
-        value = mmu->readFromMemory(address);
+        misread(baseAddress, address);
+        value = readFromMemory8(address);
     } else if constexpr (isZeroPage(Mode) && isIndexed(Mode)) {
         auto baseAddress = fetchImmedate8();
         auto index = Mode == ZeroPageIndexedX ? registers.x : registers.y;
-        address = (baseAddress + index) & 0xFF;
-        mmu->readFromMemory(baseAddress);
-        value = mmu->readFromMemory(address);
+        address = baseAddress + index;
+        readFromMemory8(baseAddress);
+        value = readFromMemory8(address);
     } else if constexpr (Mode == IndirectX) {
         auto pointerAddress = fetchImmedate8();
         auto index = registers.x;
-        mmu->readFromMemory(pointerAddress);
-        auto effectivePointerAddress = (pointerAddress + index) & 0xFF;
-        address = mmu->readFromMemory(effectivePointerAddress) |
-            mmu->readFromMemory((effectivePointerAddress + 1) & 0xFF) << 8;
-        value = mmu->readFromMemory(address);
+        readFromMemory8(pointerAddress);
+        auto effectivePointerAddress = pointerAddress + index;
+        address = readFromZeroPage16(effectivePointerAddress);
+        value = readFromMemory8(address);
     } else if constexpr (Mode == IndirectY) {
         auto pointerAddress = fetchImmedate8();
-        auto baseAddress = mmu->readFromMemory(pointerAddress) |
-            mmu->readFromMemory((pointerAddress + 1) & 0xFF) << 8;
+        auto baseAddress = readFromZeroPage16(pointerAddress);
         auto index = registers.y;
         address = baseAddress + index;
-        mmu->readFromMemory(baseAddress);
-        value = mmu->readFromMemory(address);
+        readFromMemory8(baseAddress);
+        value = readFromMemory8(address);
     }
-    mmu->writeIntoMemory(address, value);
+    // Before modifying operand, perform dummy write
+    writeIntoMemory8(address, value);
     op(value);
-    mmu->writeIntoMemory(address, value);
+    writeIntoMemory8(address, value);
 }
 
 /**
@@ -204,12 +197,14 @@ inline void Cpu::executeReadModifyWrite(const std::function<void(u8&)> &op)
  */
 template <>
 inline void Cpu::executeReadModifyWrite<AddressingMode::Accumulator>(const std::function<void(u8&)>& op) {
-    mmu->readFromMemory(registers.pc);
+    // Perform dummy read from current PC position before executing operations
+    readFromMemory8(registers.pc);
     op(registers.a);
 }
 
 /**
  * LDA - Load Accumulator
+ * Loads Accumulator with the value read from memory.
  */
 template <AddressingMode Mode>
 inline void Cpu::lda()
@@ -221,6 +216,7 @@ inline void Cpu::lda()
 
 /**
  * LDX - Load register X
+ * Loads index register X with the value read from memory.
  */
 template <AddressingMode Mode>
 inline void Cpu::ldx()
@@ -231,7 +227,8 @@ inline void Cpu::ldx()
 }
 
 /**
- * LDY - Load Y register 
+ * LDY - Load Y register
+ * Loads index register Y with the value read from memory.
  */
 template <AddressingMode Mode>
 inline void Cpu::ldy()
@@ -242,37 +239,41 @@ inline void Cpu::ldy()
 }
 
 /**
- * STA - Store Accumulator 
+ * STA - Store Accumulator
+ * Stores Accumulator value in memory.
  */
 template <AddressingMode Mode>
 inline void Cpu::sta()
 {
     auto address = resolveWriteAddress<Mode>();
-    mmu->writeIntoMemory(address, registers.a);
+    writeIntoMemory8(address, registers.a);
 }
 
 /**
- * Store X register
+ * STX - Store X register
+ * Stores index register X value in memory.
  */
 template <AddressingMode Mode>
 inline void Cpu::stx()
 {
     auto address = resolveWriteAddress<Mode>();
-    mmu->writeIntoMemory(address, registers.x);
+    writeIntoMemory8(address, registers.x);
 }
 
 /**
  * STY - Store Y register
+ * Stores index register Y value in memory.
  */
 template <AddressingMode Mode>
 inline void Cpu::sty()
 {
     auto address = resolveWriteAddress<Mode>();
-    mmu->writeIntoMemory(address, registers.y);
+    writeIntoMemory8(address, registers.y);
 }
 
 /**
  * TAX - Transfer Accmulator to X
+ * Value of Accumulator is loaded into register X. Accumulator value is left unchanged.
  */
 template <AddressingMode Mode>
 inline void Cpu::tax()
@@ -287,6 +288,7 @@ inline void Cpu::tax()
 
 /**
  * TAY - Transfer Accumulator to Y 
+ * Value of Accumulator is loaded into register Y. Accumulator value is left unchanged.
  */
 template <AddressingMode Mode>
 inline void Cpu::tay()
@@ -301,6 +303,7 @@ inline void Cpu::tay()
 
 /**
  * TSX - Transfer Stack pointer to X
+ * Value of Stack Pointer is loaded into register X. Stack pointer value is left unchanged.
  */
 template <AddressingMode Mode>
 inline void Cpu::tsx()
@@ -315,6 +318,7 @@ inline void Cpu::tsx()
 
 /**
  * TXA - Transfer X to Accumulator
+ * Value of Register X is loaded into Accumulator. Register X value is left unchanged.
  */
 template <AddressingMode Mode>
 inline void Cpu::txa()
@@ -329,6 +333,7 @@ inline void Cpu::txa()
 
 /**
  * TXS - Transfer X to Stack pointer
+ * Value of Register X is loaded into Stack Pointer. Register X value is left unchanged.
  */
 template <AddressingMode Mode>
 inline void Cpu::txs()
@@ -341,6 +346,7 @@ inline void Cpu::txs()
 
 /**
  * TYA - Transfer Y to Accumulator 
+ * Value of Register Y is loaded into Accumulator. Register Y value is left unchanged.
  */
 template <AddressingMode Mode>
 inline void Cpu::tya()
@@ -355,6 +361,7 @@ inline void Cpu::tya()
 
 /**
  * DEC - Decrement memory
+ * Decrements value in memory.
  */
 template <AddressingMode Mode>
 inline void Cpu::dec()
@@ -368,7 +375,8 @@ inline void Cpu::dec()
 }
 
 /**
- * DEX - Decrement X 
+ * DEX - Decrement X
+ * Decrements value of register X.
  */
 template <AddressingMode Mode>
 inline void Cpu::dex()
@@ -383,6 +391,7 @@ inline void Cpu::dex()
 
 /**
  * DEY - Decrement Y 
+ * Decrements value of register Y.
  */
 template <AddressingMode Mode>
 inline void Cpu::dey()
@@ -397,6 +406,7 @@ inline void Cpu::dey()
 
 /**
  * INC - Increment memory 
+ * Increments value in memory.
  */
 template <AddressingMode Mode>
 inline void Cpu::inc()
@@ -411,6 +421,7 @@ inline void Cpu::inc()
 
 /**
  * INX - Increment X 
+ * Increments value of register X.
  */
 template <AddressingMode Mode>
 inline void Cpu::inx()
@@ -425,6 +436,7 @@ inline void Cpu::inx()
 
 /**
  * INY - Increment Y
+ * Increments value of register Y.
  */
 template <AddressingMode Mode>
 inline void Cpu::iny()
@@ -439,6 +451,7 @@ inline void Cpu::iny()
 
 /**
  * CLC - Clear Carry flag 
+ * Carry flag bit is set to 0.
  */
 template <AddressingMode Mode>
 inline void Cpu::clc()
@@ -451,6 +464,7 @@ inline void Cpu::clc()
 
 /**
  * CLD - Clear Decimal flag 
+ * Decimal flag bit is set to 0.
  */
 template <AddressingMode Mode>
 inline void Cpu::cld()
@@ -463,6 +477,7 @@ inline void Cpu::cld()
 
 /**
  * CLI - Clear Interrupt disable flag 
+ * Interrupt Disable flag bit is set to 0.
  */
 template <AddressingMode Mode>
 inline void Cpu::cli()
@@ -475,6 +490,7 @@ inline void Cpu::cli()
 
 /**
  * CLV - Clear Overflow flag 
+ * Overflow flag bit is set to 0.
  */
 template <AddressingMode Mode>
 inline void Cpu::clv()
@@ -487,6 +503,7 @@ inline void Cpu::clv()
 
 /**
  * SEC - Set Carry flag 
+ * Carry flag bit is set to 1.
  */
 template <AddressingMode Mode>
 inline void Cpu::sec()
@@ -498,7 +515,8 @@ inline void Cpu::sec()
 }
 
 /**
- * SED - Set Decimal flag 
+ * SED - Set Decimal flag
+ * Decimal flag bit is set to 1. 
  */
 template <AddressingMode Mode>
 inline void Cpu::sed()
@@ -511,6 +529,7 @@ inline void Cpu::sed()
 
 /**
  * SEI - Set Interrupt disable flag 
+ * Interrupt Disable flag bit is set to 1.
  */
 template <AddressingMode Mode>
 inline void Cpu::sei()
@@ -523,6 +542,7 @@ inline void Cpu::sei()
 
 /**
  * PHA - Push accumulator into stack 
+ * Accumulator value is pushed to the stack. Value of Accumulator is left unchanged.
  */
 template <AddressingMode Mode>
 inline void Cpu::pha()
@@ -534,7 +554,8 @@ inline void Cpu::pha()
 }
 
 /**
- * PHP - Push Processor status into stack 
+ * PHP - Push Processor status into stack
+ * Pushes value of Processor Status flags with bits 4 and 5 set, but doesn't set those bits in register value itself. 
  */
 template <AddressingMode Mode>
 inline void Cpu::php()
@@ -547,12 +568,13 @@ inline void Cpu::php()
 
 /**
  * PLA - Pull accumulator from stack 
+ * Loads Accumulator with value popped from stack.
  */
 template <AddressingMode Mode>
 inline void Cpu::pla()
 {
     auto plaOp = [this](){
-        mmu->readFromMemory(registers.s);
+        readFromMemory8(registers.s);
         registers.a = popFromStack8();
         updateZeroFlag(registers.a);
         updateNegativeFlag(registers.a);
@@ -562,12 +584,13 @@ inline void Cpu::pla()
 
 /**
  * PLP - Pull processor status from stack 
+ * Loads Processor Status flags from stack, without taking bit 4 into account and retaining value of bit 5 before popping.
  */
 template <AddressingMode Mode>
 inline void Cpu::plp()
 {
     auto plpOp = [this](){
-        mmu->readFromMemory(registers.s);
+        readFromMemory8(registers.s);
         registers.p = (registers.p & (1 << 5)) | (popFromStack8() & ~(1 << 4));
     };
     executeImplied<Mode>(plpOp);
@@ -575,6 +598,7 @@ inline void Cpu::plp()
 
 /**
  * JMP - Jump
+ * Jump to another place in memory, by setting Program Counter value with new address depending on Addressing Mode.
  */
 template <AddressingMode Mode>
 inline void Cpu::jmp()
@@ -586,39 +610,44 @@ inline void Cpu::jmp()
     }
     if constexpr (Mode == Indirect) {
         auto pointer = fetchImmedate16();
-        registers.pc = mmu->readFromMemory(pointer) | mmu->readFromMemory((pointer & 0xFF00) | ((pointer + 1) & 0xFF)) << 8;
+        // Page crossing does not happen while reading jump destination from the pointer
+        registers.pc = readAndWrapFromMemory16(pointer);
     }
 }
 
 /**
  * JSR - Jump to subroutine 
+ * Jumping to subroutine involves pushing Program Counter to the stack and then setting it to the address of subroutine to be called.
  */
 template <AddressingMode Mode>
 inline void Cpu::jsr()
 {
     static_assert(Mode == AddressingMode::Absolute, "JSR instruction only supports Absolute addressing");
     auto address = fetchImmedate16();
-    mmu->readFromMemory(registers.s);
+    readFromMemory8(registers.s);
     pushIntoStack16(registers.pc - 1);
     registers.pc = address;
 }
 
 /**
  * RTS - Return from subroutine
+ * Returning from subroutine involves jumping to the incremented address popped from stack, that was pushed while calling subroutine.
  */
 template <AddressingMode Mode>
 inline void Cpu::rts()
 {
     auto rtsOp = [this](){
-        mmu->readFromMemory(registers.s);
+        readFromMemory8(registers.s);
         registers.pc = popFromStack16() + 1;
-        mmu->readFromMemory(registers.pc);
+        readFromMemory8(registers.pc);
     };
     executeImplied<Mode>(rtsOp);
 }
 
 /**
  * ADC - Add memory to Accumulator with Carry 
+ * Byte from the the memory and carry flag value is added to the accumulator.
+ * Result of the operation is stored in the accumulator.
  */
 template <AddressingMode Mode>
 inline void Cpu::adc()
@@ -626,6 +655,7 @@ inline void Cpu::adc()
     auto operand = resolveReadOperand<Mode>();
     u16 result = registers.a + operand + registers.p.carry;
     registers.p.carry = (result >> 8) & 0x1;
+    // Checking for arithmetic overflow (change of sign as a result of operation)
     registers.p.overflow = ((registers.a ^ result) & (operand ^ result) & 0x80) > 0;
     registers.a = result & 0xFF;
     updateZeroFlag(registers.a);
@@ -634,6 +664,8 @@ inline void Cpu::adc()
 
 /**
  * SBC - Subtract memory from accumulator with borrow
+ * Byte from the the memory and negated carry flag is subtracted from accumulator.
+ * Result of the operation is stored in the accumulator.
  */
 template <AddressingMode Mode>
 inline void Cpu::sbc()
@@ -641,6 +673,7 @@ inline void Cpu::sbc()
     auto operand = resolveReadOperand<Mode>();
     u16 result = registers.a - operand - !registers.p.carry;
     registers.p.carry = !((result >> 8) & 0x1);
+    // Checking for arithmetic overflow (change of sign as a result of operation)
     registers.p.overflow = ((registers.a ^ result) & (~operand ^ result) & 0x80) > 0;
     registers.a = result & 0xFF;
     updateZeroFlag(registers.a);
@@ -649,6 +682,8 @@ inline void Cpu::sbc()
 
 /**
  * AND - AND memory with Accumulator 
+ * Byte from the memory is bitwise ANDed with Accumulator.
+ * Result of the operation is stored in Accumulator.
  */
 template <AddressingMode Mode>
 inline void Cpu::_and()
@@ -661,6 +696,8 @@ inline void Cpu::_and()
 
 /**
  * EOR - Exclusive OR memory with Accumulator 
+ * Byte from the memory is bitwise XORed with Accumulator.
+ * Result of the operation is stored in Accumulator.
  */
 template <AddressingMode Mode>
 inline void Cpu::eor()
@@ -673,6 +710,8 @@ inline void Cpu::eor()
 
 /**
  * ORA - OR memory with Accumulator 
+ * Byte from the memory is bitwise ORed with Accumulator.
+ * Result of the operation is stored in Accumulator.
  */
 template <AddressingMode Mode>
 inline void Cpu::ora()
@@ -685,6 +724,7 @@ inline void Cpu::ora()
 
 /**
  * BCC - Branch on Carry Clear 
+ * Jumps to specified location when carry flag is 0.
  */
 template <AddressingMode Mode>
 inline void Cpu::bcc()
@@ -694,6 +734,7 @@ inline void Cpu::bcc()
 
 /**
  * BCS - Branch on Carry Set 
+ * Jumps to specified location when carry flag is 1.
  */
 template <AddressingMode Mode>
 inline void Cpu::bcs()
@@ -703,6 +744,7 @@ inline void Cpu::bcs()
 
 /**
  * BEQ - Branch on Result zero
+ * Jumps to specified location when zero flag is 1.
  */
 template <AddressingMode Mode>
 inline void Cpu::beq()
@@ -712,6 +754,7 @@ inline void Cpu::beq()
 
 /**
  * BMI - Branch on Result Minus
+ * Jumps to specified location when negative flag is 1.
  */
 template <AddressingMode Mode>
 inline void Cpu::bmi()
@@ -721,6 +764,7 @@ inline void Cpu::bmi()
 
 /**
  * BNE - Branch on Result Not Zero 
+ * Jumps to specified location when zero flag is 0.
  */
 template <AddressingMode Mode>
 inline void Cpu::bne()
@@ -730,6 +774,7 @@ inline void Cpu::bne()
 
 /**
  * BPL - Branch on Result Plus
+ * Jumps to specified location when negative flag is 0.
  */
 template <AddressingMode Mode>
 inline void Cpu::bpl()
@@ -739,6 +784,7 @@ inline void Cpu::bpl()
 
 /**
  * BVC - Branch on Overflow Clear 
+ * Jumps to specified location when overflow flag is 0.
  */
 template <AddressingMode Mode>
 inline void Cpu::bvc()
@@ -748,6 +794,7 @@ inline void Cpu::bvc()
 
 /**
  * BVS - Branch on Overflow Set 
+ * Jumps to specified location when overflow flag is 1.
  */
 template <AddressingMode Mode>
 inline void Cpu::bvs()
@@ -757,6 +804,8 @@ inline void Cpu::bvs()
 
 /**
  * ASL - Arithmetic Shift Left 
+ * Carry is updated with value of most significant bit of accumulator.
+ * Then accumulator is shifted left by one bit.
  */
 template <AddressingMode Mode>
 inline void Cpu::asl()
@@ -771,7 +820,9 @@ inline void Cpu::asl()
 }
 
 /**
- * LSR - Logical Shift Left 
+ * LSR - Logical Shift Right 
+ * Carry is updated with value of least significant bit of accumulator.
+ * Then accumulator is shifted right by one bit.
  */
 template <AddressingMode Mode>
 inline void Cpu::lsr()
@@ -787,6 +838,8 @@ inline void Cpu::lsr()
 
 /**
  * ROL - Rotate Left 
+ * Accumulator is rotated left, which means that carry is set to most significant bit of accumulator, 
+ * value of accumulator is then shifted left by one bit and bit 0 of accumulator is set to old value of carry.
  */
 template <AddressingMode Mode>
 inline void Cpu::rol()
@@ -803,6 +856,8 @@ inline void Cpu::rol()
 
 /**
  * ROR - Rotate Right
+ * Accumulator is rotated right, which means that carry is set to least significant bit of accumulator, 
+ * value of accumulator is then shifted right by one bit and bit 7 of accumulator is set to old value of carry.
  */
 template <AddressingMode Mode>
 inline void Cpu::ror()
@@ -819,6 +874,8 @@ inline void Cpu::ror()
 
 /**
  * CMP - Compare memory and Accumulator 
+ * Performs subtraction without borrow. 
+ * Result of the operation is discarded as the goal of this operation is to only update Processor Status flags.
  */
 template <AddressingMode Mode>
 inline void Cpu::cmp()
@@ -832,6 +889,8 @@ inline void Cpu::cmp()
 
 /**
  * CPX - Compare memory with register X 
+ * Performs subtraction without borrow. 
+ * Result of the operation is discarded as the goal of this operation is to only update Processor Status flags.
  */
 template <AddressingMode Mode>
 inline void Cpu::cpx()
@@ -845,6 +904,8 @@ inline void Cpu::cpx()
 
 /**
  * CPY - Compare memory with register Y 
+ * Performs subtraction without borrow. 
+ * Result of the operation is discarded as the goal of this operation is to only update Processor Status flags.
  */
 template <AddressingMode Mode>
 inline void Cpu::cpy()
@@ -858,6 +919,7 @@ inline void Cpu::cpy()
 
 /**
  * BRK - Break
+ * Executes BRK - Software interrupt, that shares the same interrupt vector as IRQ.
  */
 template <AddressingMode Mode>
 inline void Cpu::brk()
@@ -868,13 +930,15 @@ inline void Cpu::brk()
 
 /**
  * RTI - Return from Interrupt 
+ * Returns from interrupt. 
+ * Value of Processor Status is popped from stack and after that new Program Counter is popped from stack.
  */
 template <AddressingMode Mode>
 inline void Cpu::rti()
 {
     auto rtiOp = [this](){
         auto oldFlags = registers.p;
-        mmu->readFromMemory(registers.s);
+        readFromMemory8(registers.s);
         registers.p = popFromStack8() | oldFlags & 0x20;
         registers.pc = popFromStack16();
     };
@@ -889,7 +953,7 @@ inline void Cpu::nop()
 {
     using enum AddressingMode;
     if constexpr (Mode == Implied) {
-        mmu->readFromMemory(registers.pc);
+        readFromMemory8(registers.pc);
     } else {
         resolveReadOperand<Mode>();
     }
@@ -897,6 +961,8 @@ inline void Cpu::nop()
 
 /**
  * BIT - Test bits in memory with Accumulator 
+ * Byte from memory is ANDed with Accumulator. 
+ * Result of the operation is discarded as the goal of this operation is to only update Processor Status flags.
  */
 template <AddressingMode Mode>
 inline void Cpu::bit()
@@ -910,6 +976,8 @@ inline void Cpu::bit()
 
 /**
  * ALR [Unofficial] - AND oper + LSR
+ * Byte from memory and accumulator are placed in the bus at the same time effectively resulting in AND operation.
+ * Then LSR instruction is performed.
  */
 template <AddressingMode Mode>
 inline void Cpu::alr()
@@ -925,6 +993,8 @@ inline void Cpu::alr()
 
 /**
  * ANC [Unofficial] - AND oper + set carry as ASL/ROL 
+ * Byte from memory and accumulator are placed in the bus at the same time effectively resulting in AND operation.
+ * Then carry flag is updated same way as it is for ASL or ROL instruction.
  */
 template <AddressingMode Mode>
 inline void Cpu::anc()
@@ -939,19 +1009,27 @@ inline void Cpu::anc()
 
 /**
  * XAA [Unofficial] - A and X and oper -> A 
+ * A base value of Accumulator is determined based on the contets of A and a constant, which may be typically $00, $FF, $EE, etc. 
+ * The value of this constant depends on temerature, the chip series, and maybe other factors, as well.
+ * $FF is used to eliminate those uncertanties.
+ * Byte from memory, Accumulator and register X are placed in the bus at the same time effectively resulting in AND operation.
+ * Result of that operation is stored in Accumulator.
  */
 template <AddressingMode Mode>
 inline void Cpu::xaa()
 {
     static_assert(Mode == AddressingMode::Immediate, "XAA instruction only supports Immediate addressing");
     auto operand = resolveReadOperand<Mode>();
-    registers.a = (registers.a | 0xFF) & registers.x & operand;
+    registers.a = 0xFF & registers.x & operand;
     updateZeroFlag(registers.a);
     updateNegativeFlag(registers.a);
 }
 
 /**
  * ARR [Unofficial] - AND oper + ROR
+ * Byte from memory and accumulator are placed in the bus at the same time effectively resulting in AND operation.
+ * Then ROR instruction is performed.
+ * Because this instruction involves the adder, thus overflow flag is set according to: (A AND operand) + operand.
  */
 template <AddressingMode Mode>
 inline void Cpu::arr()
@@ -960,9 +1038,11 @@ inline void Cpu::arr()
     auto oldCarry = registers.p.carry;
     auto operand = resolveReadOperand<Mode>();
     registers.a &= operand;
+
     // Operation involves adder and flag is set according to (A and oper) + oper
     auto sum = registers.a + operand;
     registers.p.overflow = ((registers.a ^ sum) & (operand ^ sum) & 0x80) > 0;
+
     registers.p.carry = registers.a & 0x1;
     registers.a = (registers.a >> 1) | (oldCarry << 7);
     updateZeroFlag(registers.a);
@@ -971,6 +1051,7 @@ inline void Cpu::arr()
 
 /**
  * DCP [Unofficial] - DEC oper + CMP oper
+ * Decrements value in memory and after modification compares it with Accumulator.
  */
 template <AddressingMode Mode>
 inline void Cpu::dcp()
@@ -987,6 +1068,8 @@ inline void Cpu::dcp()
 
 /**
  * ISC [Unofficial] - INC oper + SBC oper 
+ * Increments value in memory and after modification performs Subtraction with Borrow.
+ * Result of that operation is stored in Accumulator.
  */
 template <AddressingMode Mode>
 inline void Cpu::isc()
@@ -1005,6 +1088,8 @@ inline void Cpu::isc()
 
 /**
  * LAS [Unofficial] - LDA/TSX oper (M AND SP -> A, X, SP)
+ * Mix of LDA and TSX instructions. Byte from memory and Stack Pointer is placed in the bus at the same time resulting in AND operation.
+ * Result of that operation is stored in Accumulator, Register X and Stack Pointer.
  */
 template <AddressingMode Mode>
 inline void Cpu::las()
@@ -1019,6 +1104,7 @@ inline void Cpu::las()
 
 /**
  * LAX [Unofficial] - LDA oper + LDX oper
+ * Mix of LDA and LDX instructions. Byte from memory is stored in Accumulator and Register X.
  */
 template <AddressingMode Mode>
 inline void Cpu::lax()
@@ -1032,12 +1118,17 @@ inline void Cpu::lax()
 
 /**
  * LXA [Unofficial] - Store * AND oper in A and X
+ * A base value of Accumulator is determined based on the contets of A and a constant, which may be typically $00, $FF, $EE, etc. 
+ * The value of this constant depends on temerature, the chip series, and maybe other factors, as well.
+ * $FF is used to eliminate those uncertanties.
+ * Byte from memory and accumulator are placed in the bus at the same time effectively resulting in AND operation.
+ * Result is stored in Accumulator and Register X.
  */
 template <AddressingMode Mode>
 inline void Cpu::lxa()
 {
     auto operand = resolveReadOperand<Mode>();
-    registers.a = (registers.a | 0xFF) & operand;
+    registers.a = 0xFF & operand;
     registers.x = registers.a;
     updateZeroFlag(registers.a);
     updateNegativeFlag(registers.a);
@@ -1045,6 +1136,8 @@ inline void Cpu::lxa()
 
 /**
  * RLA [Unofficial] - ROL oper + AND oper
+ * Byte from memory is rotated left, then result is ANDed with Accumulator.
+ * Result is stored in Accumulator.
  */
 template <AddressingMode Mode>
 inline void Cpu::rla()
@@ -1062,6 +1155,8 @@ inline void Cpu::rla()
 
 /**
  * RRA [Unofficial] - ROR oper + ADC oper
+ * Byte from memory is rotated right, then result is added with updated carry to Accumulator.
+ * Result is stored in accumulator.
  */
 template <AddressingMode Mode>
 inline void Cpu::rra()
@@ -1081,18 +1176,21 @@ inline void Cpu::rra()
 }
 
 /**
- * SAX [Unofficial] - A and X are put on the bus at the same time (resulting effectively in an AND operation) and stored in M. 
+ * SAX [Unofficial] 
+ * A and X are put on the bus at the same time (resulting effectively in an AND operation) and stored in memory. 
  */
 template <AddressingMode Mode>
 inline void Cpu::sax()
 {
     auto address = resolveWriteAddress<Mode>();
     auto result = registers.a & registers.x;
-    mmu->writeIntoMemory(address, result);
+    writeIntoMemory8(address, result);
 }
 
 /**
- * AXS [Unofficial] - CMP and DEX at once, sets flags like CMP
+ * AXS [Unofficial] - CMP + DEX
+ * Accumulator and Register X is placed on the bus at the same time (resulting effectively in an AND operation).
+ * Accumulator is then compared with the result of the operation. But instead of discarding the result it is stored in Register X.
  */
 template <AddressingMode Mode>
 inline void Cpu::axs()
@@ -1116,7 +1214,7 @@ inline void Cpu::ahx()
     static_assert(Mode == AbsoluteIndexedY || Mode == IndirectY, "AHX instruction only supports Absolute Indexed Y and Indirect Y addressing");
     auto address = resolveWriteAddress<Mode>();
     auto result = registers.a & registers.x & (((address >> 8) + 1) & 0xFF);
-    mmu->writeIntoMemory(address, result);
+    writeIntoMemory8(address, result);
 }
 
 /**
@@ -1128,7 +1226,7 @@ inline void Cpu::shx()
     static_assert(Mode == AddressingMode::AbsoluteIndexedY, "SHX instruction only supports Absolute Indexed Y addressing");
     auto address = resolveWriteAddress<Mode>();
     u8 result = registers.x & (((address >> 8) & 0xFF) + 1);
-    mmu->writeIntoMemory(address, result);
+    writeIntoMemory8(address, result);
 }
 
 /**
@@ -1140,11 +1238,12 @@ inline void Cpu::shy()
     static_assert(Mode == AddressingMode::AbsoluteIndexedX, "SHY instruction only supports Absolute Indexed X addressing");
     auto address = resolveWriteAddress<Mode>();
     u8 result = registers.y & (((address >> 8) & 0xFF) + 1);
-    mmu->writeIntoMemory(address, result);
+    writeIntoMemory8(address, result);
 }
 
 /**
  * SLO [Unofficial] - ASL oper + ORA oper 
+ * Arithmetically shifts left byte from memory. Result is the ORed with Accumulator.
  */
 template <AddressingMode Mode>
 inline void Cpu::slo()
@@ -1159,6 +1258,7 @@ inline void Cpu::slo()
 
 /**
  * SRE [Unofficial] - LSR oper + EOR oper
+ * Logically shifts left byte from memory. Result is the XORed with Accumulator.
  */
 template <AddressingMode Mode>
 inline void Cpu::sre()
@@ -1181,11 +1281,14 @@ inline void Cpu::tas()
     auto address = resolveWriteAddress<Mode>();
     registers.s = registers.a & registers.x;
     auto value = registers.a & registers.x & ((address >> 8) + 1);
-    mmu->writeIntoMemory(address, value);
+    writeIntoMemory8(address, value);
 }
 
 /**
  * STP [Unofficial] - Freeze the CPU 
+ * This instruction is an example of a case where some "accidentally" triggered
+ * CPU micro-operations never reset the internal instruction clock, 
+ * thus making it stuck in the middle of instruction execution effectively halting the CPU.
  */
 template <AddressingMode Mode>
 inline void Cpu::stp()

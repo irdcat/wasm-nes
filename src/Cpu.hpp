@@ -40,6 +40,21 @@ class Cpu
 
         void handleInterrupt(InterruptType type);
 
+        u16 wrapAddress(u16 oldAddress, u16 newAddress);
+        u8 misfire(u16 baseAddress, u16 effectiveAddress);
+        u8 misread(u16 baseAddress, u16 effectiveAddress);
+
+        u8 readFromZeroPage8(u16 addr);
+        u16 readFromZeroPage16(u16 addr);
+
+        void writeIntoZeroPage8(u16 addr, u8 value);
+
+        u8 readFromMemory8(u16 addr);
+        u16 readFromMemory16(u16 addr);
+        u16 readAndWrapFromMemory16(u16 addr);
+
+        void writeIntoMemory8(u16 addr, u8 value);
+
         u8 fetchImmedate8();
         u16 fetchImmedate16();
 
