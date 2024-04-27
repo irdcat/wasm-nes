@@ -39,7 +39,8 @@ unsigned Cpu::step()
     // Instruction execution consists of 2 steps:
     // 1. Fetching 1 byte long operation code of the instruction
     // 2. Decoding and executing operations according to the opcode
-    // 1 CPU cycle which is taken to read byte from memory 
+    //
+    // 1 CPU cycle which is taken to read opcode from memory 
     // is generally considered part of the instruction "cost" measured in CPU cycles
     auto opcode = fetchOpcode();
     executeInstruction(opcode);
@@ -421,9 +422,100 @@ void Cpu::handleInterrupt(InterruptType type)
     }
     
     // Read Interrupt Vector and jump to it.
-    u16 interruptVector = mmu->readFromMemory(interruptVectorLocation) 
-        | (mmu->readFromMemory(interruptVectorLocation + 1) << 8);
+    u16 interruptVector = readFromMemory16(interruptVectorLocation);
     registers.pc = interruptVector;
+}
+
+/**
+ * Wraps new address in the boundaries of the page of the old address.
+ * This is used in cases where instruction performs read/write from memory before fetching high byte of new address,
+ * and when reading 16 bit value from memory in situations where page crossing is not meant to happen. 
+ */
+u16 Cpu::wrapAddress(u16 oldAddress, u16 newAddress)
+{
+    return (oldAddress & 0xFF00) | (newAddress & 0xFF);
+}
+
+/**
+ * Performs misread. If modified address crosses page boundary, performs another read. 
+ */
+u8 Cpu::misfire(u16 baseAddress, u16 effectiveAddress)
+{
+    auto wrappedAddress = wrapAddress(baseAddress, effectiveAddress);
+    auto result = readFromMemory8(wrappedAddress);
+    if(wrappedAddress != effectiveAddress) {
+        result = readFromMemory8(effectiveAddress);
+    }
+    return result;
+}
+
+/**
+ * Reads 8 bit value from memory effective address, but in the boundaries of the memory page specified by base address. 
+ */
+u8 Cpu::misread(u16 baseAddress, u16 effectiveAddress)
+{
+    auto wrappedAddress = wrapAddress(baseAddress, effectiveAddress);
+    return readFromMemory8(wrappedAddress);
+}
+
+/**
+ * Reads 8 bit value from zero page of memory. 
+ */
+u8 Cpu::readFromZeroPage8(u16 addr)
+{
+    return readFromMemory8(addr & 0xFF);
+}
+
+/**
+ * Reads 16 bit value from zero page of memory and assurres that page crossing will not happen. 
+ */
+u16 Cpu::readFromZeroPage16(u16 addr)
+{
+    return static_cast<u16>(readFromMemory8(addr & 0xFF))
+        | (static_cast<u16>(readFromMemory8((addr + 1) & 0xFF)) << 8);
+}
+
+/**
+ * Writes 8 bit value into zero page of memory. 
+ */
+void Cpu::writeIntoZeroPage8(u16 addr, u8 value)
+{
+    writeIntoMemory8(addr & 0xFF, value);
+}
+
+
+/**
+ * Reads 8 bit value from memory. 
+ */
+u8 Cpu::readFromMemory8(u16 addr)
+{
+    return mmu->readFromMemory(addr);
+}
+
+/**
+ * Reads 16 bit value from memory. 
+ */
+u16 Cpu::readFromMemory16(u16 addr)
+{
+    return static_cast<u16>(readFromMemory8(addr))
+        | (static_cast<u16>(readFromMemory8(addr + 1)) << 8);
+}
+
+/**
+ * Reads 16 bit value from memory without performing page crossing. 
+ */
+u16 Cpu::readAndWrapFromMemory16(u16 addr)
+{
+    return static_cast<u16>(readFromMemory8(addr))
+        | (static_cast<u16>(readFromMemory8(wrapAddress(addr, addr + 1))) << 8);
+}
+
+/**
+ * Writes 8 bit value into memory 
+ */
+void Cpu::writeIntoMemory8(u16 addr, u8 value)
+{
+    mmu->writeIntoMemory(addr, value);
 }
 
 /**
@@ -432,7 +524,9 @@ void Cpu::handleInterrupt(InterruptType type)
  */
 u8 Cpu::fetchImmedate8()
 {
-    return mmu->readFromMemory(registers.pc++);
+    auto result = readFromMemory8(registers.pc);
+    registers.pc++;
+    return result;
 }
 
 /**
@@ -441,8 +535,9 @@ u8 Cpu::fetchImmedate8()
  */
 u16 Cpu::fetchImmedate16()
 {
-    return static_cast<u16>(fetchImmedate8()) 
-        + static_cast<u16>(fetchImmedate8() << 8);
+    auto result = readFromMemory16(registers.pc);
+    registers.pc += 2;
+    return result;
 }
 
 /**
@@ -451,7 +546,7 @@ u16 Cpu::fetchImmedate16()
  */
 u8 Cpu::popFromStack8()
 {
-    return mmu->readFromMemory(0x100 | ++registers.s);
+    return readFromMemory8(0x100 | ++registers.s);
 }
 
 /**
@@ -460,7 +555,7 @@ u8 Cpu::popFromStack8()
  */
 void Cpu::pushIntoStack8(u8 value)
 {
-    mmu->writeIntoMemory(0x100 | registers.s--, value);
+    writeIntoMemory8(0x100 | registers.s--, value);
 }
 
 /**
