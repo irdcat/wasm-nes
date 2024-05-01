@@ -44,7 +44,7 @@ inline u8 Cpu::resolveReadOperand()
         result = readFromMemory8(address);
     } else if constexpr (Mode == IndirectY) {
         auto pointerAddress = fetchImmedate8();
-        u16 address = readFromZeroPage16(address);
+        u16 address = readFromZeroPage16(pointerAddress);
         auto index = registers.y;
         auto effectiveAddress = address + index;
         result = misfire(address, effectiveAddress);
@@ -157,7 +157,7 @@ inline void Cpu::executeReadModifyWrite(const std::function<void(u8&)> &op)
         value = readFromMemory8(address);
     } else if constexpr (Mode == ZeroPage) {
         address = fetchImmedate8();
-        value = readFromMemory8(address);
+        value = readFromZeroPage8(address);
     } else if constexpr (isAbsolute(Mode) && isIndexed(Mode)) {
         auto baseAddress = fetchImmedate16();
         auto index = Mode == AbsoluteIndexedX ? registers.x : registers.y;
@@ -169,7 +169,7 @@ inline void Cpu::executeReadModifyWrite(const std::function<void(u8&)> &op)
         auto index = Mode == ZeroPageIndexedX ? registers.x : registers.y;
         address = baseAddress + index;
         readFromMemory8(baseAddress);
-        value = readFromMemory8(address);
+        value = readFromZeroPage8(address);
     } else if constexpr (Mode == IndirectX) {
         auto pointerAddress = fetchImmedate8();
         auto index = registers.x;
@@ -186,9 +186,15 @@ inline void Cpu::executeReadModifyWrite(const std::function<void(u8&)> &op)
         value = readFromMemory8(address);
     }
     // Before modifying operand, perform dummy write
-    writeIntoMemory8(address, value);
-    op(value);
-    writeIntoMemory8(address, value);
+    if constexpr(isZeroPage(Mode)) {
+        writeIntoZeroPage8(address, value);
+        op(value);
+        writeIntoZeroPage8(address, value);
+    } else {
+        writeIntoMemory8(address, value);
+        op(value);
+        writeIntoMemory8(address, value);
+    }
 }
 
 /**

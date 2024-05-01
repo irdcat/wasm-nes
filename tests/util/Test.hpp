@@ -14,6 +14,8 @@ class Test
         virtual int run() = 0;
 
         std::string getName();
+
+        virtual std::string getFailureReason() { return std::string(); }
     
     private:
         std::string name;
