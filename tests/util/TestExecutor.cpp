@@ -25,9 +25,11 @@ int TestExecutor::runAll()
         auto testResult = -1;
         
         std::cout << "|" << std::left << std::setw(TEST_NAME_COL_WIDTH) << std::setfill(' ') << testName;
-        
+        std::cout.flush();
+
         bool hasSetUp = test->setUp();
         std::cout << "|" << std::left << std::setw(SET_UP_RESULT_COL_WIDTH) << std::setfill(' ') << (hasSetUp ? "Done" : "Failed");
+        std::cout.flush();
 
         std::stringstream ss;
         if(hasSetUp) {
@@ -40,6 +42,11 @@ int TestExecutor::runAll()
         }
         std::cout << "|" << std::left << std::setw(RUN_RESULT_COL_WIDTH) << std::setfill(' ') << ss.str();
         std::cout << "|" << std::endl;
+
+        auto failureReason = test->getFailureReason();
+        if(failureReason.size() > 0) {
+            std::cout << failureReason << std::endl << std::endl;
+        }
         result |= testResult;
     }
     return result;
