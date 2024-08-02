@@ -18,7 +18,7 @@ class Emulator
 
         void loadRom(const std::string& filename);
 
-        void handleInput();
+        void handleEvents();
 
         void update(u32 millisElapsed);
 
@@ -42,11 +42,11 @@ class Emulator
         void updateScreen();
         u8 sdlKeyToNesIndex(SDL_Scancode scancode);
 
-        std::array<u32, 64> colors;
+        void handleInputEvent(const SDL_Event& e);
+        void handleWindowEvent(const SDL_WindowEvent& e);
 
-        static constexpr const unsigned DISPLAY_WIDTH = 256;
-        static constexpr const unsigned DISPLAY_HEIGHT = 240;
-        static constexpr const unsigned PIXEL_SIZE = 2;
+        std::array<u32, 64> colors;
+        SDL_Rect currentViewport;
 
         static constexpr const unsigned CPU_CYCLES_PER_SECOND = 1790000;
 };

@@ -26,7 +26,7 @@ extern "C"
         {
             currentTime = SDL_GetTicks64();
             deltaTime = currentTime - lastTime;
-            emulator.handleInput();
+            emulator.handleEvents();
             emulator.update(deltaTime);
             emulator.render();
             lastTime = currentTime;

@@ -22,12 +22,13 @@ Emulator::Emulator()
 
     window = make_sdl_resource(SDL_CreateWindow, SDL_DestroyWindow, "Wasm-NES",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-        Ppu::SCREEN_WIDTH * PIXEL_SIZE, Ppu::SCREEN_HEIGHT * PIXEL_SIZE, SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+        Ppu::SCREEN_WIDTH, Ppu::SCREEN_HEIGHT, SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
 
     renderer = make_sdl_resource(SDL_CreateRenderer, SDL_DestroyRenderer, window.get(),
         -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 
-    SDL_RenderSetLogicalSize(renderer.get(), DISPLAY_WIDTH * PIXEL_SIZE, DISPLAY_HEIGHT * PIXEL_SIZE);
+    SDL_RenderSetLogicalSize(renderer.get(), Ppu::SCREEN_WIDTH, Ppu::SCREEN_HEIGHT);
+    currentViewport = SDL_Rect { 0, 0, Ppu::SCREEN_WIDTH, Ppu::SCREEN_HEIGHT };
 
     texture = make_sdl_resource(SDL_CreateTexture, SDL_DestroyTexture, renderer.get(),
         SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, Ppu::SCREEN_WIDTH, Ppu::SCREEN_HEIGHT);
@@ -116,20 +117,38 @@ void Emulator::loadRom(const std::string &filename)
     reset();
 }
 
-void Emulator::handleInput()
+void Emulator::handleEvents()
 {
     static SDL_Event event;
     while(SDL_PollEvent(&event) != 0) {
         if(event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {
-            auto key = event.key.keysym.scancode;
-            auto pressed = event.type == SDL_KEYDOWN;
-            auto nesIndex = sdlKeyToNesIndex(key);
-            if(nesIndex != 0xFF) {
-                controllers->updateKeyPressStatus(0, nesIndex, pressed);
-            }
+            handleInputEvent(event);
+        } else if(event.type == SDL_WINDOWEVENT) {
+            handleWindowEvent(event.window);
         } else if(event.type == SDL_QUIT) {
             shouldRun = false;
         }
+    }
+}
+
+void Emulator::handleInputEvent(const SDL_Event& event)
+{
+    auto key = event.key.keysym.scancode;
+    auto pressed = event.type == SDL_KEYDOWN;
+    auto nesIndex = sdlKeyToNesIndex(key);
+    if(nesIndex != 0xFF) {
+        controllers->updateKeyPressStatus(0, nesIndex, pressed);
+    }
+}
+
+void Emulator::handleWindowEvent(const SDL_WindowEvent& windowEvent)
+{
+    if(windowEvent.event == SDL_WINDOWEVENT_RESIZED) {
+        auto newWidth = windowEvent.data1;
+        auto newHeight = windowEvent.data2;
+        std::cout << "Wievport adjusted (W: " << newWidth << ", H: " << newHeight << ")" << std::endl;
+        currentViewport = SDL_Rect { 0, 0, newWidth, newHeight };
+        SDL_RenderSetLogicalSize(renderer.get(), newWidth, newHeight);
     }
 }
 
@@ -145,9 +164,8 @@ void Emulator::update(u32 millisElapsed)
 
 void Emulator::render()
 {
-    auto viewport = SDL_Rect{ 0, 0, Ppu::SCREEN_WIDTH * PIXEL_SIZE, Ppu::SCREEN_HEIGHT * PIXEL_SIZE };
     SDL_RenderClear(renderer.get());
-    SDL_RenderCopy(renderer.get(), texture.get(), nullptr, &viewport);
+    SDL_RenderCopy(renderer.get(), texture.get(), nullptr, &currentViewport);
     SDL_RenderPresent(renderer.get());
 }
 
