@@ -1,6 +1,18 @@
 /**
  * Loading ROM
  */
+function uploadRom() {
+    let fileInputElement = document.getElementById("romFile");
+    fileInputElement.click();
+}
+
+function updateRomName(event) {
+    let file = event.target.files[0];
+    let fileName = file.name;
+    let inputElement = document.getElementById("romName");
+    inputElement.value = fileName;
+}
+
 let fileReader = new FileReader();
 
 function loadRom() {
