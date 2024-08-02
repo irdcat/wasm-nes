@@ -8,7 +8,13 @@
         <div class="flex flex-col items-center p-2 m-0 absolute top-2/4 left-2/4 -translate-y-2/4 -translate-x-2/4 box-border bg-slate-300 rounded-xl min-w-md">
             <div class="grow flex mb-2 p-2 rounded-2xl bg-slate-900 min-w-full">
                 <div class="grow">
-                    <input type="file" id="romFile" class="file-input file-input-bordered file-input-sm file-input-primary">
+                    <input type="file" id="romFile" class="hidden" onchange="updateRomName(event)"/>
+                    <label for="romFile">
+                        <div class="join border border-primary">
+                            <input id="romName" class="input input-sm input-bordered input-primary join-item" placeholder="Choose ROM" disabled="true"/>
+                            <button class="btn btn-sm btn-primary join-item" onclick="uploadRom()">Load ROM</button>
+                        </div>
+                    </label>
                 </div>
                 <div class="grow-0">
                     <button onclick="loadRom()" type="button" class="btn btn-sm btn-primary">Run</button>
