@@ -4,9 +4,9 @@
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/daisyui@3.2.1/dist/full.css" rel="stylesheet" type="text/css"/>
     </head>
-    <body class="m-0 p-0 bg-slate-400">
-        <div class="flex flex-col items-center p-2 m-0 absolute top-2/4 left-2/4 -translate-y-2/4 -translate-x-2/4 box-border bg-slate-300 rounded-xl min-w-md">
-            <div class="grow flex mb-2 p-2 rounded-2xl bg-slate-900 min-w-full">
+    <body class="m-0 p-0 w-screen h-screen bg-slate-400">
+        <div class="flex flex-col items-center p-2 m-0 box-border bg-slate-300 rounded-xl h-full">
+            <div class="grow-0 flex mb-2 p-2 rounded-2xl bg-slate-900">
                 <div class="grow">
                     <input type="file" id="romFile" class="hidden" onchange="updateRomName(event)"/>
                     <label for="romFile">
@@ -20,7 +20,7 @@
                     <button onclick="loadRom()" type="button" class="btn btn-sm btn-primary">Run</button>
                 </div>
             </div>
-            <canvas oncontextmenu="event.preventDefault()" id="canvas" width="512" height="480" class="grow-0"></canvas>
+            <canvas oncontextmenu="event.preventDefault()" id="canvas" class="grow aspect-[8/7]"></canvas>
         </div>
         <script src="index.js"></script>
         <script src="wasm-nes.js"></script>
