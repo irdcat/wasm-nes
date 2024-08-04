@@ -10,10 +10,7 @@ Controllers::Controllers()
 
 void Controllers::updateKeyPressStatus(u8 port, u8 key, bool pressed)
 {
-    if(port > 1) {
-        port = 1;
-    }
-
+    port &= 1;
     key &= 7;
 
     if(pressed) {
@@ -25,7 +22,7 @@ void Controllers::updateKeyPressStatus(u8 port, u8 key, bool pressed)
 
 void Controllers::strobe(u8 value)
 {
-    strobeFlag = value & 0x1;
+    strobeFlag = value & 1;
     if(strobeFlag) {
         keysLatched[0] = keysInternal[0];
         keysLatched[1] = keysInternal[1];
@@ -34,16 +31,12 @@ void Controllers::strobe(u8 value)
 
 u8 Controllers::read(u8 port)
 {
-    if(port > 1) {
-        port = 1;
-    }
-
-    u8 result = 0;
-    if(strobeFlag) {
-        result = keysLatched[port] & 0x1;
-    } else {
-        result = keysLatched[port] >> shift[port];
-        shift[port] = ++shift[port] & 0x7;
+    port &= 1;
+    u8 result = keysLatched[port] & 1;
+    if (!strobeFlag) {
+        keysLatched[port] >>= 1;
+        // Unspecified values in 4021 shift register are pulled up
+        keysLatched[port] |= 0x80;
     }
     return result;
 }
