@@ -36,9 +36,6 @@ const CANVAS_ID = "canvas";
 
 var Module = {
     onRuntimeInitialized: function() {
-        // Workaround to avoid DaisyUI styles being overwritten by style element inserted into head by Tailwind script 
-        let daisyUiStylesheet = document.querySelector("link");
-        document.querySelector("head").appendChild(daisyUiStylesheet);
         Module.ccall('run', null, null, null);
     },
     

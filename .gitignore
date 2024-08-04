@@ -36,3 +36,6 @@
 
 # Build directory
 build/**
+
+# Node modules
+node_modules
