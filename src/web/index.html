@@ -19,7 +19,9 @@
                     <button onclick="loadRom()" type="button" class="btn btn-sm btn-primary">Run</button>
                 </div>
             </div>
-            <canvas oncontextmenu="event.preventDefault()" id="canvas" class="grow aspect-[8/7]"></canvas>
+            <div class="grow !min-w-0 !min-h-0 aspect-[8/7]">
+                <canvas oncontextmenu="event.preventDefault()" id="canvas" class="w-full h-full"></canvas>
+            </div>
         </div>
         <script src="index.js"></script>
         <script src="wasm-nes.js"></script>
