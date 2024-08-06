@@ -10,7 +10,7 @@
 
 /**
  * CPU - Central Processing Unit
- * This class represents CPU part Ricoh RP2A03 CPU (Used by NES in NTSC region).
+ * This class represents Ricoh RP2A03 CPU (Used by NES in NTSC region).
  */
 class Cpu
 {

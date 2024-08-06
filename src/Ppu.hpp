@@ -8,6 +8,10 @@
 #include "Cartridge.hpp"
 #include "PpuRegisters.hpp"
 
+/**
+ * PPU - Picture Processing Unit
+ * This class represents 2C02 PPU (Used by NES in NTSC region)
+ */
 class Ppu
 {
     public:
@@ -79,6 +83,7 @@ class Ppu
         void renderPixel();
 
         void refreshOpenBus(u8 value);
+        void decayOpenBus();
 
         u8 ppuRead(u16 addr);
         void ppuWrite(u16 addr, u8 value);
