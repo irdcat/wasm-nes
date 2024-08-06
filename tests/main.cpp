@@ -35,16 +35,16 @@ int main()
     testExecutor.registerIntegrationTest<PpuVramAccessTest>();
     testExecutor.registerIntegrationTest<VBlankClearTimeTest>();
     testExecutor.registerIntegrationTest<SpriteHitBasicsTest>();
-    //testExecutor.registerIntegrationTest<SpriteHitAlignmentTest>();
-    //testExecutor.registerIntegrationTest<SpriteHitCornersTest>();
-    //testExecutor.registerIntegrationTest<SpriteHitFlipTest>();
+    testExecutor.registerIntegrationTest<SpriteHitAlignmentTest>();
+    testExecutor.registerIntegrationTest<SpriteHitCornersTest>();
+    testExecutor.registerIntegrationTest<SpriteHitFlipTest>();
     testExecutor.registerIntegrationTest<SpriteHitLeftClipTest>();
     testExecutor.registerIntegrationTest<SpriteHitRightEdgeTest>();
     testExecutor.registerIntegrationTest<SpriteHitScreenBottomTest>();
-    //testExecutor.registerIntegrationTest<SpriteHitDoubleHeightTest>();
-    //testExecutor.registerIntegrationTest<SpriteHitTimingBasicsTest>();
-    //testExecutor.registerIntegrationTest<SpriteHitTimingOrderTest>();
-    //testExecutor.registerIntegrationTest<SpriteHitEdgeTimingTest>();
+    testExecutor.registerIntegrationTest<SpriteHitDoubleHeightTest>();
+    testExecutor.registerIntegrationTest<SpriteHitTimingBasicsTest>();
+    testExecutor.registerIntegrationTest<SpriteHitTimingOrderTest>();
+    testExecutor.registerIntegrationTest<SpriteHitEdgeTimingTest>();
 
     return testExecutor.runAll();
 }
