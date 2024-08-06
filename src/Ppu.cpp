@@ -3,7 +3,7 @@
 
 Ppu::Ppu(const std::shared_ptr<Cartridge>& cartridge,
     const std::function<void()>& nmiTriggerCallback,
-    const std::function<void()>& vblankInterruptCallback)
+    const std::function<void()>& vblankCallback)
     : cartridge(cartridge)
     , registers()
     , openBusDecayTimer(0)
@@ -29,7 +29,7 @@ Ppu::Ppu(const std::shared_ptr<Cartridge>& cartridge,
     , spriteSecondaryOamPosition(0)
     , spriteRenderingPosition(0)
     , nmiTriggerCallback(nmiTriggerCallback)
-    , vblankInterruptCallback(vblankInterruptCallback)
+    , vblankCallback(vblankCallback)
 {
 }
 
@@ -200,13 +200,14 @@ void Ppu::tick()
     // but NMI triggering is delayed on a real PPU.
     if(scanline == 241 && renderingPositionX == 1) {
         registers.ppuStatus.inVBlank = 1;
-        // Q: Should NMI be triggered always?
-        nmiTriggerCallback();
-        vblankInterruptCallback();
+        if (registers.ppuCtrl.VBlankNmi) {
+            nmiTriggerCallback();
+            vblankCallback();
+        }
     }
 
     // Close to the end of last scanline PPUSTATUS bits are reset
-    if(scanline == 260 && renderingPositionX == 330) {
+    if(scanline == 260 && renderingPositionX == 340) {
         registers.ppuStatus.spriteZeroHit = 0;
         registers.ppuStatus.spriteOverflow = 0;
         registers.ppuStatus.inVBlank = 0;
