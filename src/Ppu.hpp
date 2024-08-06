@@ -23,7 +23,7 @@ class Ppu
 
         Ppu(const std::shared_ptr<Cartridge>& cartridge,
             const std::function<void()>& nmiTriggerCallback,
-            const std::function<void()>& vblankInterruptCallback);
+            const std::function<void()>& vblankCallback);
 
         ~Ppu() = default;
 
@@ -71,7 +71,7 @@ class Ppu
         u8 spriteRenderingPosition;
 
         std::function<void()> nmiTriggerCallback;
-        std::function<void()> vblankInterruptCallback;
+        std::function<void()> vblankCallback;
 
         u16 interleavePatternBytes(u8 lsb, u8 msb);
 
