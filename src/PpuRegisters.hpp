@@ -60,7 +60,7 @@ union PpuInternalRegister
     RegisterBit<12, 3, u32> fineY;
     RegisterBit<15, 3, u32> fineX;
     RegisterBit<0, 8, u32> vramAddressLow;
-    RegisterBit<8, 7, u32> vramAddressHigh;
+    RegisterBit<8, 6, u32> vramAddressHigh;
     RegisterBit<0, 14, u32> vramAddress;
 
     operator u16() { return raw; }
