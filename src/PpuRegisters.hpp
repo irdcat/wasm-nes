@@ -49,6 +49,17 @@ union PpuStatusRegister
     PpuStatusRegister& operator=(u8 value) { raw = value; return *this; }
 };
 
+union OamAddressRegister
+{
+    u8 raw;
+    RegisterBit<0, 2> spriteDataIndex;
+    RegisterBit<2, 6> spriteIndex;
+
+    operator u8&() { return raw; }
+
+    OamAddressRegister& operator=(u8 value) { raw = value; return *this; }
+};
+
 union PpuInternalRegister
 {
     RegisterBit<0, 15, u32> raw;
@@ -73,7 +84,7 @@ struct PpuRegisters
     PpuCtrlRegister ppuCtrl;
     PpuMaskRegister ppuMask;
     PpuStatusRegister ppuStatus;
-    u8 oamAddr;
+    OamAddressRegister oamAddr;
     PpuInternalRegister vaddr;
     PpuInternalRegister taddr;
 };
