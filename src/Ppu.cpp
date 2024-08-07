@@ -196,28 +196,28 @@ void Ppu::tick()
         }
     }
 
-    // Technically VBlank starts from scanline 240
-    // but NMI triggering is delayed on a real PPU.
+    // At the beginning of scanline 241 PPU enters VBlank
     if(scanline == 241 && renderingPositionX == 1) {
         registers.ppuStatus.inVBlank = 1;
         if (registers.ppuCtrl.VBlankNmi) {
+            // Callback called whenever NMI is triggered by PPU
             nmiTriggerCallback();
-            vblankCallback();
         }
+        // Callback called whenever we enter VBLANK
+        vblankCallback();
     }
 
     // Close to the end of last scanline PPUSTATUS bits are reset
     if(scanline == 260 && renderingPositionX == 340) {
+        registers.ppuStatus.inVBlank = 0;
         registers.ppuStatus.spriteZeroHit = 0;
         registers.ppuStatus.spriteOverflow = 0;
-        registers.ppuStatus.inVBlank = 0;
         evenOddFrameToggle = !evenOddFrameToggle;
     }
 
     // Update rendering position and proceed to the next scanline if the end is reached
-    renderingPositionX++;
-    if(renderingPositionX >= scanlineEndPosition) {
-        renderingPositionX = 0;
+    renderingPositionX = (renderingPositionX + 1) % scanlineEndPosition;
+    if(renderingPositionX == 0) {
         scanlineEndPosition = 341;
         scanline++;
         if(scanline == 261) {
