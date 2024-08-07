@@ -50,10 +50,16 @@ u8 Ppu::read(u8 index)
         // that is used by PPUSCROLL and PPUADDR registers 
         offsetToggleLatch = false;
     } else if (index == 4) { // 0x2004 OAMDATA - OAM data port
-        result = oam[registers.oamAddr];
+        if (scanline < 240 && renderingPositionX <= 64) {
+            // Before sprite evaluation, reads from 0x2004 always return 0xFF
+            result = 0xFF;
+        } else {
+            // Read byte from OAM
+            result = oam[registers.oamAddr];
+        }
         // Bits 2,3,4 of sprite attributes in OAM are not used
         // Q: Does the unused bits should be populated with open bus data?
-        if ((registers.oamAddr & 3) == 2) {
+        if ((registers.oamAddr.spriteDataIndex) == 2) {
             result &= 0xE3;
         }
         refreshOpenBus(result);
@@ -107,7 +113,7 @@ void Ppu::write(u8 index, u8 data)
         registers.oamAddr = data;
     } else if (index == 4) { // 0x2004 OAMDATA - OAM data port
         // Writes to OAM via OAMDATA register are resulting in oam address incrementation
-        oam[registers.oamAddr++] = data;
+        oam[registers.oamAddr.raw++] = data;
     } else if (index == 5) { // 0x2005 PPUSCROLL - Ppu scrolling position register (X Scroll on first write, Y Scroll on second write)
         if(offsetToggleLatch) {
             // Second write to PPUSCROLL register updates Y scroll
@@ -245,9 +251,19 @@ const Ppu::Framebuffer& Ppu::getFramebuffer()
  */
 u16 Ppu::interleavePatternBytes(u8 lsb, u8 msb)
 {
+    // Given the input as in example above
+    // Pattern initially is 76543210HGFEDCBA
     auto pattern = u16(lsb) | u16(msb) << 8;
+    // First hex digits in the middle swap places
+    // Result will be 7654HGFE3210DCBA
     pattern = (pattern & 0xF00F) | ((pattern & 0xF00) >> 4) | ((pattern & 0xF0) << 4);
+    // Then 2 bit portions of the pattern gets swapped between each other
+    // Result will be 76HG54FE32DC10BA
     pattern = (pattern & 0xC3C3) | ((pattern & 0x3030) >> 2) | ((pattern & 0xC0C) << 2);
+    // Then the last step is to swap places between individual bits
+    // It will produce desired outcome as currently pattern consists of bits arranged into pairs
+    // So the last step is to swap bits between these pairs
+    // Result will be 7H6G5F4E3D2C1B0A
     pattern = (pattern & 0x9999) | ((pattern & 0x4444) >> 1) | ((pattern & 0x2222) << 1);
     return pattern;
 }
@@ -469,78 +485,48 @@ void Ppu::evaluateSprites()
     if (renderingPositionX < 64) {
         // Sprite evaluation does not take place before dot 64
         return;
-    }
-
-    // TODO: Reset OAM bytes to 0xFF at dot 64
-
-    // On odd cycles PPU reads from primary OAM
-    // on even cycles previously read data is transfered to secondary OAM
-    bool readFromPrimaryOam = renderingPositionX % 2 != 0;
-    u8 spriteEvaluationPhase = 4;
-    if(renderingPositionX < 256 && readFromPrimaryOam) {
-        spriteEvaluationPhase = registers.oamAddr++ & 0x3;
-    }
-
-    // TODO: Refactor this block
-    switch (spriteEvaluationPhase)
-    {
-        case 0:
-            // Reset oamAddr when all sprites from primary OAM has been evaluated
+    } else if (renderingPositionX == 64) {
+        oamTempData = oam[oamAddr];
+    } else if(renderingPositionX < 256 && renderingPositionX % 2 != 0) {
+        // On odd cycles PPU reads from primary OAM
+        // on even cycles previously read data is transfered to secondary OAM.
+        auto spriteEvaluationPhase = oamAddr.spriteDataIndex;
+        oamAddr.raw++;
+        if (spriteEvaluationPhase == 0) {
             if(spritePrimaryOamPosition >= 64) {
                 oamAddr = 0;
-                break;
+                return;
             }
             spritePrimaryOamPosition++;
-            // When secondary OAM hasn't been populated yet
-            // Transfer the data from primary OAM
-            if(spriteSecondaryOamPosition < 8) {
-                oam2[spriteSecondaryOamPosition].positionY = oamTempData;
-                oam2[spriteSecondaryOamPosition].spriteIndex = (oamAddr >> 2);
-            }
-            {
-                // Calculate the vertical position of the current sprite
-                // to evaluate if it will be rendered on the next scanline
-                u8 top = oamTempData;
-                u8 bottom = top + (ppuCtrl.spriteSize ? 16 : 8);
-                if(scanline >= top && scanline < bottom) {
-                    break;
-                }
-                oamAddr = oamAddr + 3;
-            }
-            break;
-        
-        case 1:
-            // When secondary OAM hasn't been populated yet
-            // Transfer the data from primary OAM
-            if(spriteSecondaryOamPosition < 8) {
-                oam2[spriteSecondaryOamPosition].tileIndexNumber.raw = oamTempData;
-            }
-            break;
+        }
 
-        case 2:
-            // When secondary OAM hasn't been populated yet
-            // Transfer the data from primary OAM
-            if(spriteSecondaryOamPosition < 8) {
-                oam2[spriteSecondaryOamPosition].attributes.raw = oamTempData;
-            }
-            break;
+        // When secondary OAM hasn't been populated yet, transfer the data from primary OAM
+        if (spriteSecondaryOamPosition < 8) {
+            oam2[spriteSecondaryOamPosition].raw[spriteEvaluationPhase] = oamTempData;
+        }
 
-        case 3:
-            // When secondary OAM hasn't been populated yet
-            // Transfer the data from primary OAM
-            // Or update overflow flag in PPUSTATUS
+        if (spriteEvaluationPhase == 0) {
+            oam2[spriteSecondaryOamPosition].spriteIndex = oamAddr.spriteIndex;
+            // Check whether sprite vertical position overlaps currently rendered scanline
+            u8 top = oam2[spriteSecondaryOamPosition].positionY;
+            u8 bottom = top + (ppuCtrl.spriteSize ? 16 : 8);
+            if(scanline >= top && scanline < bottom) {
+                return;
+            }
+            oamAddr = oamAddr.raw + 3;
+        }
+
+        if (spriteEvaluationPhase == 3) {
             // TODO: Implement sprite overflow bug
-            if(spriteSecondaryOamPosition < 8) {
-                oam2[spriteSecondaryOamPosition].positionX = oamTempData;
+            if (spriteSecondaryOamPosition < 8) {
                 spriteSecondaryOamPosition++;
             } else {
+                // Update overflow flag in PPUSTATUS
                 ppuStatus.spriteOverflow = 1;
             }
-            break;
-        
-        default:
-            oamTempData = oam[oamAddr];
-            break;
+        }
+    } else {
+        oamTempData = oam[oamAddr];
     }
 }
 
