@@ -269,7 +269,7 @@ u16 Ppu::interleavePatternBytes(u8 lsb, u8 msb)
 }
 
 /**
- * Increment X scrolling components of internal V register.
+ * Increment horizontal scrolling components of internal V register.
  * Fine X is not modified during rendering.
  */
 void Ppu::incrementScrollX()
@@ -282,7 +282,7 @@ void Ppu::incrementScrollX()
 }
 
 /**
- * Increment Y scrolling components of internal V register. 
+ * Increment vertical scrolling components of internal V register. 
  */
 void Ppu::incrementScrollY()
 {
@@ -299,6 +299,29 @@ void Ppu::incrementScrollY()
 }
 
 /**
+ * Resets horizontal scrolling components to values from internal T register
+ */
+void Ppu::resetScrollX()
+{
+    auto& vaddr = registers.vaddr;
+    const auto& taddr = registers.taddr;
+    vaddr.coarseX = (unsigned) taddr.coarseX;
+    vaddr.baseHorizontalNametable = (unsigned) taddr.baseHorizontalNametable;
+}
+
+/**
+ * Resets vertical scrolling components to values from internal T register
+ */
+void Ppu::resetScrollY()
+{
+    auto& vaddr = registers.vaddr;
+    const auto& taddr = registers.taddr;
+    vaddr.coarseY = (unsigned) taddr.coarseY;
+    vaddr.baseVerticalNametable = (unsigned) taddr.baseVerticalNametable;
+    vaddr.fineY = (unsigned) taddr.fineY;
+}
+
+/**
  * Decode currently rendered tiles. 
  * This includes background tiles but also sprite tiles, 
  * that are rendered on the current scanline.
@@ -312,6 +335,24 @@ void Ppu::incrementScrollY()
  * thus each byte from pattern table holds information about 4 pixels.
  * These 2 bits does not directly encode information about a color, 
  * but instead it is an index of the color from the pallete.
+ * 
+ * Pallete color indexes are resolved as follows:
+ * 
+ *   LSBs         MSBs        Result
+ * 
+ * 01000001     00000001     01000003
+ * 11000010     00000010     11000030
+ * 01000100     00000100     01000300
+ * 01001000  +  00001000  =  01003000
+ * 00010000     00010110     00030220
+ * 00100000     00100001     00300002
+ * 01000000     01000010     03000020
+ * 10000000     10000111     30000222
+ * 
+ * Starting position of the bytes for tile is always divisible by 8.
+ * Bytes are ordered in memory in a simple way: 8 bytes with LSBs then 8 bytes with MSBs.
+ * To combine two pattern bytes from memory at address [addr], 
+ * LSBs has to be read from address [addr], and MSBs from [addr+8]
  * 
  * PPU in it's pallete memory is capable of holding 8 different 4 color palettes.
  * 
@@ -360,20 +401,9 @@ void Ppu::decodeTiles()
             nametableAddress = 0x2000 + (vaddr.raw & 0xFFF);
             // If background rendering is enabled
             if(ppuMask.showBg) {
-                // At dot 304 of pre-render scanline Y scroll 
-                // components of V are reinitialized with contents of T
+                // At dot 304 vertical scroll is reset
                 if(renderingPositionX == 304 && scanline == -1) {
-                    vaddr.coarseY = (unsigned) taddr.coarseY;
-                    vaddr.baseVerticalNametable = (unsigned) taddr.baseVerticalNametable;
-                    vaddr.fineY = (unsigned) taddr.fineY;
-                }
-                // At dot 256 of each visible and pre-render scanline X scroll
-                // components of V are reinitialized with contents of T
-                if(renderingPositionX == 256) {
-                    vaddr.coarseX = (unsigned) taddr.coarseX;
-                    vaddr.baseHorizontalNametable = (unsigned) taddr.baseHorizontalNametable;
-                    // Also reset pointer to OAM 3
-                    spriteRenderingPosition = 0;
+                    resetScrollY();
                 }
             }
             break;
@@ -387,7 +417,8 @@ void Ppu::decodeTiles()
             // Fetch address of pattern of the next tile
             // Pattern table is chosen based on bit in PPUCTRL
             patternTableAddress = 0x1000 * ppuCtrl.backgroundPatternTableAddress;
-            // Pattern table is chosen based on tile ID read from nametable
+            // Tile pattern is chosen based on tile ID read from nametable
+            // Tile pattern row is chosen based on fineY value
             patternTableAddress += (ppuRead(nametableAddress) << 4) + vaddr.fineY;
             // Shift previously read tile pattern and attributes into internal shift registers
             if(shouldDecodeTile) {
@@ -396,6 +427,14 @@ void Ppu::decodeTiles()
                 // Attributes for the 4 tiles are encoded into 2 bit variables.
                 // Multiplying it by 0x5555 will cause it to be spread across 16 bits.
                 bgShiftAttributes = (bgShiftAttributes >> 16) | tileAttributes * 0x55550000;
+            }
+            // At dot 257 horizontal scroll is reset
+            if(renderingPositionX == 257) {
+                if(ppuMask.showBg) {
+                    resetScrollX();
+                }
+                // Also reset pointer to OAM 3
+                spriteRenderingPosition = 0;
             }
             break;
 
@@ -416,7 +455,6 @@ void Ppu::decodeTiles()
             if(shouldDecodeTile) {
                 // Read next tile attributes are read.
                 tileAttributes = (ppuRead(attributeTableAddress) >> ((vaddr.coarseX & 2) + 2 * (vaddr.coarseY & 2))) & 3;
-                // Q: Should scroll components of V register should be incremented here?
                 incrementScrollX();
                 if(renderingPositionX == 251) {
                     incrementScrollY();
@@ -486,18 +524,21 @@ void Ppu::evaluateSprites()
         // Sprite evaluation does not take place before dot 64
         return;
     } else if (renderingPositionX == 64) {
+        for(auto& sprite : oam2) {
+            sprite.raw[0] = sprite.raw[1] = sprite.raw[2] = sprite.raw[3] = 0xFF;
+        }
         oamTempData = oam[oamAddr];
-    } else if(renderingPositionX < 256 && renderingPositionX % 2 != 0) {
-        // On odd cycles PPU reads from primary OAM
-        // on even cycles previously read data is transfered to secondary OAM.
+    } else if(renderingPositionX <= 256 && renderingPositionX % 2 != 0) {
+        // On even cycles PPU reads from primary OAM
+        // on odd cycles previously read data is transfered to secondary OAM.
         auto spriteEvaluationPhase = oamAddr.spriteDataIndex;
         oamAddr.raw++;
         if (spriteEvaluationPhase == 0) {
-            if(spritePrimaryOamPosition >= 64) {
+            spritePrimaryOamPosition++;
+            if(spritePrimaryOamPosition > 64) {
                 oamAddr = 0;
                 return;
             }
-            spritePrimaryOamPosition++;
         }
 
         // When secondary OAM hasn't been populated yet, transfer the data from primary OAM
@@ -508,7 +549,7 @@ void Ppu::evaluateSprites()
         if (spriteEvaluationPhase == 0) {
             oam2[spriteSecondaryOamPosition].spriteIndex = oamAddr.spriteIndex;
             // Check whether sprite vertical position overlaps currently rendered scanline
-            u8 top = oam2[spriteSecondaryOamPosition].positionY;
+            u8 top = oamTempData;
             u8 bottom = top + (ppuCtrl.spriteSize ? 16 : 8);
             if(scanline >= top && scanline < bottom) {
                 return;
@@ -541,7 +582,7 @@ void Ppu::renderPixel()
     bool showBackground = registers.ppuMask.showBg && (!isOnEdge || registers.ppuMask.showBg8);
 
     unsigned fx = registers.vaddr.fineX;
-    bool xDivisibleBy8 = (renderingPositionX & 7) > 0 ? 0 : 1;
+    bool xDivisibleBy8 = (renderingPositionX & 7) == 0;
     unsigned patternPosition = 15 - (((renderingPositionX & 7) + fx + 8 * !xDivisibleBy8) & 15);
     unsigned pixel = 0;
     unsigned attributes = 0;
@@ -574,25 +615,25 @@ void Ppu::renderPixel()
             if(spritePixel == 0) {
                 continue;
             }
-            // Check for sprite 0 hit
+            // Check for sprite 0 hit when opaque background pixel overlaps or is overlapped by opaque sprite pixel.
             // In real world, use case for using Sprite 0 Hit flag is to check whether PPU,
             // has reached certain Y position, given by the Y position of sprite with index 0.
-            // Q: Should we take opaque sprite pixels into consideration while checking Sprite Hit?
             if(renderingPositionX < 255 && pixel > 0 && sprite.spriteIndex == 0) {
                 registers.ppuStatus.spriteZeroHit = 1;
             }
             // If sprite's priority is set to 0, that means that sprite should be in front of background.
             // Or background pixel is transparent, render sprites pixel.
             if(sprite.attributes.priority == 0 || pixel == 0) {
-                attributes = (sprite.attributes.pallete) + 4;
                 pixel = spritePixel;
+                // Sprites use palletes 4-7, that are indexed by a 2 bit attribute
+                attributes = (sprite.attributes.pallete) + 4;
             }
             break;
         }
     }
 
     // Choose pixel color from the palette that is initialized by the executed program.
-    // Apply grayscale if enabled in PPUMASK register
+    // Apply greyscale if enabled in PPUMASK register
     pixel = palette[(attributes * 4 + pixel) & 0x1F] & (registers.ppuMask.greyscale ? 0x30 : 0x3F);
     // Update internal framebuffer
     // Internal framebuffer holds palette color indexes that can be translated later to RGB colors
@@ -632,11 +673,7 @@ u8 Ppu::ppuRead(u16 addr)
     addr &= 0x3FFF;
     // Addresses between 0x3F00 - 0x3FFF are occupied by a palette.
     if(addr >= 0x3F00) {
-        // Palette can be divided into two rows consisting of 16 colors
-        // Every 4th color (including 0) is duplicated in each row
-        // Pallete only holds 32 colors
-        addr = addr % 4 == 0 ? addr & 0xF : addr & 0x1F;
-        return palette[addr];
+        return paletteRef(addr & 0xFF);
     }
 
     // Read something from PPU bus
@@ -652,15 +689,34 @@ void Ppu::ppuWrite(u16 addr, u8 value)
     addr &= 0x3FFF;
     // Addresses between 0x3F00 - 0x3FFF are occupied by a palette.
     if(addr >= 0x3F00) {
-        // Palette can be divided into two rows consisting of 16 colors
-        // Every 4th color (including 0) is duplicated in each row
-        // Pallete only holds 32 colors
-        addr = addr % 4 == 0 ? addr & 0xF : addr & 0x1F;
-        palette[addr] = value;
+        auto& palette = paletteRef(addr & 0xFF);
+        palette = value;
         return;
     }
 
     // Read something from PPU bus
     // For convienience VRAM is kept in the cartridge, because it's wiring dictates how nametables are mirrored
     cartridge->write(addr, value);
+}
+
+/**
+ * Get a reference to value from palette memory.
+ * Palette memory is divided into 8 palletes with 4 colors each.
+ * Addresses 3F10, 3F14, 3F18, 3F1C are mirrors of 3F00, 3F04, 3F08, 3F0C.
+ * 
+ * First 4 palettes are used for background tiles.
+ * Last 4 palettes are used for sprite tiles.
+ * 
+ * Every first color of palette is either universal background color (3F00, 3F10),
+ * or is unused.
+ */
+u8& Ppu::paletteRef(u8 addr)
+{
+    if (addr % 4 == 0) {
+        addr &= 0xF;
+    } else {
+        addr &= 0x1F;
+    }
+
+    return palette[addr];
 }
