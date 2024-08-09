@@ -80,9 +80,9 @@ void Mmu::writeIntoMemory(u16 addr, u8 value)
         ppu->write(addr & 7, value);
     } else if(addr < 0x4018) {
         auto mmioAddr = addr & 0x1F;
-        static const u16 OAMDATA_ADDRESS = 0x2004;
-        static const u16 PAGE_START = (value & 7) * 0x100;
-        static const u16 PAGE_END = PAGE_START + 0xFF;
+        const u16 OAMDATA_ADDRESS = 0x2004;
+        const u16 pageStart = (value & 7) * 0x100;
+        const u16 pageEnd = pageStart + 0xFF;
         switch(mmioAddr) {
             // Register under the address 0x4014 is a write-only OAM DMA register
             // It doesn't hold any value and it's purpose is to trigger process called OAM DMA
@@ -95,7 +95,7 @@ void Mmu::writeIntoMemory(u16 addr, u8 value)
                 // before proceeding with copying DMA attempts to halt the CPU which causes a delay of up to 3 CPU cycles.
                 // Amount of cycles it takes to halt the CPU depends on instruction which triggers DMA.
                 // This behaviour is not implemented here and whole process is kept to take constant 512 cycles in total.
-                for(u16 dmaAddress = PAGE_START; dmaAddress <= PAGE_END; dmaAddress++) {
+                for(u16 dmaAddress = pageStart; dmaAddress <= pageEnd; dmaAddress++) {
                     writeIntoMemory(OAMDATA_ADDRESS, readFromMemory(dmaAddress));
                 }
                 break;

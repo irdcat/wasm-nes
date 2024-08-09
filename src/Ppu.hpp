@@ -77,6 +77,8 @@ class Ppu
 
         void incrementScrollX();
         void incrementScrollY();
+        void resetScrollX();
+        void resetScrollY();
 
         void decodeTiles();
         void evaluateSprites();
@@ -87,6 +89,8 @@ class Ppu
 
         u8 ppuRead(u16 addr);
         void ppuWrite(u16 addr, u8 value);
+
+        u8& paletteRef(u8 addr);
 
         static constexpr const unsigned OPEN_BUS_DECAY_TICKS = 77777;
 };
