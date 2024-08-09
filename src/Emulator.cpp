@@ -108,6 +108,7 @@ Emulator::Emulator()
 void Emulator::reset()
 {
     cpu->reset();
+    ppu->reset();
 }
 
 void Emulator::loadRom(const std::string &filename)

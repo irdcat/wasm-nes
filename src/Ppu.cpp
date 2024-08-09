@@ -31,6 +31,22 @@ Ppu::Ppu(const std::shared_ptr<Cartridge>& cartridge,
     , nmiTriggerCallback(nmiTriggerCallback)
     , vblankCallback(vblankCallback)
 {
+    registers.ppuCtrl = 0x00;
+    registers.ppuMask = 0x00;
+    registers.ppuStatus = 0xA0;
+    registers.oamAddr = 0x00;
+    registers.taddr = 0x0000;
+    registers.vaddr = 0x0000;
+    vramReadBuffer = 0x00;
+}
+
+void Ppu::reset()
+{
+    registers.ppuCtrl = 0x00;
+    registers.ppuMask = 0x00;
+    registers.ppuStatus = registers.ppuStatus & 0x80;
+    offsetToggleLatch = false;
+    evenOddFrameToggle = false;
 }
 
 /**
@@ -56,11 +72,11 @@ u8 Ppu::read(u8 index)
         } else {
             // Read byte from OAM
             result = oam[registers.oamAddr];
-        }
-        // Bits 2,3,4 of sprite attributes in OAM are not used
-        // Q: Does the unused bits should be populated with open bus data?
-        if ((registers.oamAddr.spriteDataIndex) == 2) {
-            result &= 0xE3;
+            // Bits 2,3,4 of sprite attributes in OAM are not used
+            // Q: Does the unused bits should be populated with open bus data?
+            if ((registers.oamAddr.spriteDataIndex) == 2) {
+                result &= 0xE3;
+            }
         }
         refreshOpenBus(result);
     } else if (index == 7) { // 0x2007 PPUDATA - Ppu data register
