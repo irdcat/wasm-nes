@@ -23,11 +23,11 @@ bool Cartridge::loadFromFile(std::ifstream file)
     using enum MirroringType;
     switch (nesHeaderData->mirroring)
     {
-        case Horizontal:
+        case Vertical:
             nta[0] = nta[1] = 0;
             nta[2] = nta[3] = 0x400;
             break;
-        case Vertical:
+        case Horizontal:
             nta[0] = nta[2] = 0;
             nta[1] = nta[3] = 0x400;
             break;

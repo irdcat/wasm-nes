@@ -211,7 +211,7 @@ void Ppu::tick()
             // In paralallel sprite evaluation also happens
             evaluateSprites();
         }
-        if (registers.ppuMask.showBg) {
+        if (registers.ppuMask.showBgSp) {
             // On every 8th dot in range 0..255 or 320..335 starting from 3rd horizontal scroll is incremented
             if(renderingPositionX % 8 == 3 
                 && (renderingPositionX < 256 || (renderingPositionX >= 320 && renderingPositionX < 335))) {
@@ -444,7 +444,7 @@ void Ppu::decodeTiles()
             }
             // Fetch address of pattern of the next tile
             // Pattern table is chosen based on bit in PPUCTRL
-            patternTableAddress = 0x1000 * ppuCtrl.backgroundPatternTableAddress;
+            patternTableAddress = ppuCtrl.backgroundPatternTableAddress << 12;
             // Tile pattern is chosen based on tile ID read from nametable
             // Tile pattern row is chosen based on fineY value
             patternTableAddress += (ppuRead(nametableAddress) << 4) + vaddr.fineY;
@@ -468,7 +468,7 @@ void Ppu::decodeTiles()
                 // The rest of 64 bytes are occupied by tile attributes.
                 // Here the address of attribute table is fetched.
                 attributeTableAddress = 0x23C0 
-                    | (vaddr.baseNametable << 11) 
+                    | (vaddr.baseNametable << 10) 
                     | ((vaddr.coarseY >> 2) << 3) 
                     | (vaddr.coarseX >> 2);
             }
