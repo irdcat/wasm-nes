@@ -211,6 +211,25 @@ void Ppu::tick()
             // In paralallel sprite evaluation also happens
             evaluateSprites();
         }
+        if (registers.ppuMask.showBg) {
+            // On every 8th dot in range 0..255 or 320..335 starting from 3rd horizontal scroll is incremented
+            if(renderingPositionX % 8 == 3 
+                && (renderingPositionX < 256 || (renderingPositionX >= 320 && renderingPositionX < 335))) {
+                incrementScrollX();
+            }
+            // At dot 251 vertical component of scroll is incremented
+            if(renderingPositionX == 251) {
+                incrementScrollY();
+            }
+            // At dot 257 horizontal scroll is reset
+            if(renderingPositionX == 257) {
+                resetScrollX();
+            }
+            // At dot 304 of pre-render scanline, vertical scroll is reset
+            if(renderingPositionX == 304 && scanline == -1) {
+                resetScrollY();
+            }
+        }
         // While processing visible scanlines but not during HBLANK
         if(scanline != -1 && renderingPositionX < 256) {
             // Render processed pixel into the framebuffer
@@ -398,7 +417,7 @@ void Ppu::resetScrollY()
 void Ppu::decodeTiles()
 {
     // During dots 0..255 PPU decodes data for the next tile to be rendered
-    // During dots 230..335 PPU decodes data for tiles that 
+    // During dots 320..335 PPU decodes data for tiles that 
     // will be rendered at the beginning of the next scanlines
     auto shouldDecodeTile = (renderingPositionX >= 0 && renderingPositionX <= 255) 
         || (renderingPositionX >= 320 && renderingPositionX <= 335);
@@ -415,13 +434,6 @@ void Ppu::decodeTiles()
             // Fetch nametable address into internal register.
             // Low 12 bits of internal V register are ORed with 2 most significant bits set to 0x2.
             nametableAddress = 0x2000 + (vaddr.raw & 0xFFF);
-            // If background rendering is enabled
-            if(ppuMask.showBg) {
-                // At dot 304 vertical scroll is reset
-                if(renderingPositionX == 304 && scanline == -1) {
-                    resetScrollY();
-                }
-            }
             break;
 
         case 1: // Nametable access
@@ -444,12 +456,8 @@ void Ppu::decodeTiles()
                 // Multiplying it by 0x5555 will cause it to be spread across 16 bits.
                 bgShiftAttributes = (bgShiftAttributes >> 16) | tileAttributes * 0x55550000;
             }
-            // At dot 257 horizontal scroll is reset
-            if(renderingPositionX == 257) {
-                if(ppuMask.showBg) {
-                    resetScrollX();
-                }
-                // Also reset pointer to OAM 3
+            if (renderingPositionX == 257) {
+                // Reset pointer to OAM3
                 spriteRenderingPosition = 0;
             }
             break;
@@ -471,10 +479,6 @@ void Ppu::decodeTiles()
             if(shouldDecodeTile) {
                 // Read next tile attributes are read.
                 tileAttributes = (ppuRead(attributeTableAddress) >> ((vaddr.coarseX & 2) + 2 * (vaddr.coarseY & 2))) & 3;
-                incrementScrollX();
-                if(renderingPositionX == 251) {
-                    incrementScrollY();
-                }
             } else if (spriteRenderingPosition < spriteSecondaryOamPosition) {
                 // OAM 3 is an arbitrary structure that didn't exist on a real PPU,
                 // but because secondary OAM contains sprites to be rendered on the next scanline
