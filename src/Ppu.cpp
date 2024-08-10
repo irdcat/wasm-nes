@@ -9,7 +9,7 @@ Ppu::Ppu(const std::shared_ptr<Cartridge>& cartridge,
     , openBusDecayTimer(0)
     , openBusContents(0)
     , vramReadBuffer(0)
-    , scanline(-1)
+    , scanline(261)
     , scanlineEndPosition(341)
     , renderingPositionX(0)
     , offsetToggleLatch(false)
@@ -181,10 +181,10 @@ void Ppu::write(u8 index, u8 data)
  * Each call iterates through one pixel of the screen.
  * Screen is divided into 261 scanlines having 341 pixels each.
  * 
- * -1:      Pre-render scanline
  * 0..239   Visible scanlines
  * 240..241 Idle
  * 241..260 Vertical blank
+ * 261      Pre-render scanline
  * 
  * Only first 256 pixels of a scanline are visible on screen.
  * Remaining invisible pixels are processed during Horizontal blank,
@@ -198,20 +198,29 @@ void Ppu::write(u8 index, u8 data)
  */
 void Ppu::tick()
 {
+    const auto& ppuMask = registers.ppuMask; 
+    auto& ppuCtrl = registers.ppuCtrl;
+    auto& ppuStatus = registers.ppuStatus;
+
     // Progress decay of open bus contents
     decayOpenBus();
 
     // Are we processing visible of pre-render scanline?
-    if(scanline < 240) {
+    if(scanline < 240 || scanline == 261) {
         // If rendering of sprites or background is enabled 
         // in PPUMASK register 
-        if(registers.ppuMask.showBgSp) {
+        if(ppuMask.showBgSp) {
             // Decoding rendered tiles
             decodeTiles();
             // In paralallel sprite evaluation also happens
             evaluateSprites();
         }
-        if (registers.ppuMask.showBgSp) {
+        // At dot 337 of pre-render scanline and if background rendering is enabled
+        // and odd frame is rendered, pre-render scanline is set to be 1 dot shorter 
+        if(renderingPositionX == 337 && scanline == 261 && evenOddFrameToggle && ppuMask.showBg) {
+            scanlineEndPosition = 340;
+        }
+        if (ppuMask.showBgSp) {
             // On every 8th dot in range 0..255 or 320..335 starting from 3rd horizontal scroll is incremented
             if(renderingPositionX % 8 == 3 
                 && (renderingPositionX < 256 || (renderingPositionX >= 320 && renderingPositionX < 335))) {
@@ -226,12 +235,14 @@ void Ppu::tick()
                 resetScrollX();
             }
             // At dot 304 of pre-render scanline, vertical scroll is reset
-            if(renderingPositionX == 304 && scanline == -1) {
+            // In reality this operation is repeated dot by dot between dots 280..304.
+            // There's no sense in such redundancy as in that range, nothing is fetched from nametable.
+            if(renderingPositionX == 304 && scanline == 261) {
                 resetScrollY();
             }
         }
         // While processing visible scanlines but not during HBLANK
-        if(scanline != -1 && renderingPositionX < 256) {
+        if(scanline != 261 && renderingPositionX < 256) {
             // Render processed pixel into the framebuffer
             renderPixel();
         }
@@ -239,8 +250,8 @@ void Ppu::tick()
 
     // At the beginning of scanline 241 PPU enters VBlank
     if(scanline == 241 && renderingPositionX == 1) {
-        registers.ppuStatus.inVBlank = 1;
-        if (registers.ppuCtrl.VBlankNmi) {
+        ppuStatus.inVBlank = 1;
+        if (ppuCtrl.VBlankNmi) {
             // Callback called whenever NMI is triggered by PPU
             nmiTriggerCallback();
         }
@@ -250,20 +261,18 @@ void Ppu::tick()
 
     // Close to the end of last scanline PPUSTATUS bits are reset
     if(scanline == 260 && renderingPositionX == 340) {
-        registers.ppuStatus.inVBlank = 0;
-        registers.ppuStatus.spriteZeroHit = 0;
-        registers.ppuStatus.spriteOverflow = 0;
+        ppuStatus.inVBlank = 0;
+        ppuStatus.spriteZeroHit = 0;
+        ppuStatus.spriteOverflow = 0;
         evenOddFrameToggle = !evenOddFrameToggle;
     }
 
-    // Update rendering position and proceed to the next scanline if the end is reached
+    // Update rendering position and proceed to the next scanline 
+    // if the end of the current one is reached
     renderingPositionX = (renderingPositionX + 1) % scanlineEndPosition;
     if(renderingPositionX == 0) {
         scanlineEndPosition = 341;
-        scanline++;
-        if(scanline == 261) {
-            scanline = -1;
-        }
+        scanline = ((scanline + 1) % 262);
     }
 }
 
@@ -279,26 +288,26 @@ const Ppu::Framebuffer& Ppu::getFramebuffer()
  * Helper method responsible for interleaving pattern bits from 2 different memory locations.
  * 
  * Given the input:
- * msb: 76543210
- * lsb: HGFEDCBA
+ * msb: 7654 3210
+ * lsb: HGFE DCBA
  * 
- * Output will be: 7H6G5F4E3D2C1B0A 
+ * Output will be: 7H6G 5F4E 3D2C 1B0A 
  */
 u16 Ppu::interleavePatternBytes(u8 lsb, u8 msb)
 {
     // Given the input as in example above
-    // Pattern initially is 76543210HGFEDCBA
+    // Pattern initially is 7654 3210 HGFE DCBA
     auto pattern = u16(lsb) | u16(msb) << 8;
     // First hex digits in the middle swap places
-    // Result will be 7654HGFE3210DCBA
+    // Result will be 7654 HGFE 3210 DCBA
     pattern = (pattern & 0xF00F) | ((pattern & 0xF00) >> 4) | ((pattern & 0xF0) << 4);
     // Then 2 bit portions of the pattern gets swapped between each other
-    // Result will be 76HG54FE32DC10BA
+    // Result will be 76HG 54FE 32DC 10BA
     pattern = (pattern & 0xC3C3) | ((pattern & 0x3030) >> 2) | ((pattern & 0xC0C) << 2);
     // Then the last step is to swap places between individual bits
     // It will produce desired outcome as currently pattern consists of bits arranged into pairs
     // So the last step is to swap bits between these pairs
-    // Result will be 7H6G5F4E3D2C1B0A
+    // Result will be 7H6G 5F4E 3D2C 1B0A
     pattern = (pattern & 0x9999) | ((pattern & 0x4444) >> 1) | ((pattern & 0x2222) << 1);
     return pattern;
 }
@@ -325,9 +334,18 @@ void Ppu::incrementScrollY()
     vaddr.fineY++;
     if (vaddr.fineY == 0) {
         if (vaddr.coarseY == 29) {
+            // Because the nametable can only hold 30 rows of tiles
+            // Coarse Y value is wrapped after reaching 29, 
+            // and this is accompanied by vertical nametable switch
             vaddr.coarseY = 0;
             vaddr.baseVerticalNametable = ~vaddr.baseVerticalNametable;
         } else {
+            // Because Coarse Y coordinate is 5 bits long, 
+            // it can be set to value greater than 29 by developer.
+            // Outcome of this is something that resembles negative scroll 
+            // and it is used tu push 1 or 2 topmost rows of the nametable to the overscan area.
+            // As a side effect, during Tile ID resolution, 
+            // attribute table bytes are being interpreted as nametable bytes. 
             vaddr.coarseY++;
         }
     }
@@ -437,11 +455,6 @@ void Ppu::decodeTiles()
             break;
 
         case 1: // Nametable access
-            // At dot 337 of pre-render scanline and if background rendering is enabled
-            // and odd frame is rendered, pre-render scanline is 1 dot shorter 
-            if(renderingPositionX == 337 && scanline == -1 && evenOddFrameToggle && ppuMask.showBg) {
-                scanlineEndPosition = 340;
-            }
             // Fetch address of pattern of the next tile
             // Pattern table is chosen based on bit in PPUCTRL
             patternTableAddress = ppuCtrl.backgroundPatternTableAddress << 12;
@@ -453,7 +466,7 @@ void Ppu::decodeTiles()
                 // Multiplication by 0x10000 is an equivalent of shifting left by 16 bits
                 bgShiftPattern = (bgShiftPattern >> 16) | 0x00010000 * tilePattern;
                 // Attributes for the 4 tiles are encoded into 2 bit variables.
-                // Multiplying it by 0x5555 will cause it to be spread across 16 bits.
+                // Multiplying it by 0x5555 will cause it to be spread and repeated across 16 bits.
                 bgShiftAttributes = (bgShiftAttributes >> 16) | tileAttributes * 0x55550000;
             }
             if (renderingPositionX == 257) {
@@ -467,7 +480,9 @@ void Ppu::decodeTiles()
                 // Tiles in the nametable only occupy 960 bytes.
                 // The rest of 64 bytes are occupied by tile attributes.
                 // Here the address of attribute table is fetched.
-                attributeTableAddress = 0x23C0 
+                // Because attribute table bytes control whole quadrants of nametable,
+                // lower bits of coarse coordinates are not used.
+                attributeTableAddress = 0x23C0
                     | (vaddr.baseNametable << 10) 
                     | ((vaddr.coarseY >> 2) << 3) 
                     | (vaddr.coarseX >> 2);

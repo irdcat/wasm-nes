@@ -46,7 +46,7 @@ class Ppu
         unsigned openBusDecayTimer;
         u8 openBusContents;
         u8 vramReadBuffer;
-        int scanline;
+        unsigned scanline;
         unsigned scanlineEndPosition;
         unsigned renderingPositionX;
         bool offsetToggleLatch;
