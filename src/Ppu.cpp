@@ -335,7 +335,7 @@ void Ppu::incrementScrollY()
     if (vaddr.fineY == 0) {
         if (vaddr.coarseY == 29) {
             // Because the nametable can only hold 30 rows of tiles
-            // Coarse Y value is wrapped after reaching 29, 
+            // Coarse Y value is wrapped after reaching 30, 
             // and this is accompanied by vertical nametable switch
             vaddr.coarseY = 0;
             vaddr.baseVerticalNametable = ~vaddr.baseVerticalNametable;
@@ -358,8 +358,8 @@ void Ppu::resetScrollX()
 {
     auto& vaddr = registers.vaddr;
     const auto& taddr = registers.taddr;
-    vaddr.coarseX = (unsigned) taddr.coarseX;
-    vaddr.baseHorizontalNametable = (unsigned) taddr.baseHorizontalNametable;
+    vaddr.coarseX = static_cast<u8>(taddr.coarseX);
+    vaddr.baseHorizontalNametable = static_cast<u8>(taddr.baseHorizontalNametable);
 }
 
 /**
@@ -369,9 +369,9 @@ void Ppu::resetScrollY()
 {
     auto& vaddr = registers.vaddr;
     const auto& taddr = registers.taddr;
-    vaddr.coarseY = (unsigned) taddr.coarseY;
-    vaddr.baseVerticalNametable = (unsigned) taddr.baseVerticalNametable;
-    vaddr.fineY = (unsigned) taddr.fineY;
+    vaddr.coarseY = static_cast<u8>(taddr.coarseY);
+    vaddr.baseVerticalNametable = static_cast<u8>(taddr.baseVerticalNametable);
+    vaddr.fineY = static_cast<u8>(taddr.fineY);
 }
 
 /**
