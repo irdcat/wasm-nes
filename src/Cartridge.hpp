@@ -6,6 +6,8 @@
 #include <array>
 
 #include "Types.hpp"
+#include "MirroringType.hpp"
+#include "Mapper.hpp"
 
 class Cartridge
 {
@@ -18,25 +20,10 @@ class Cartridge
 
         u8 read(u16 addr);
 
-        const std::vector<u8>& getChrRom();
+        MirroringType getMirroringType() const;
 
     private:
-        std::vector<u8> prgRom;
-        std::vector<u8> chrRom;
-        std::array<u8, 0x2000> prgRam;
-        std::array<u8, 0x1000> chrRam;
-
-        std::array<u16, 4> nta;
-        bool usesChrRamInsteadOfChrRom;
-
-        u8& memoryRef(u16 addr);
-
-        enum class MirroringType
-        {
-            Horizontal,
-            Vertical,
-            FourScreen
-        };
+        std::unique_ptr<Mapper> mapper;
 
         struct NesHeaderData
         {
@@ -52,4 +39,6 @@ class Cartridge
 
         std::unique_ptr<NesHeaderData> parseNesHeader(const NesHeader& nesHeader);
         bool isValidNesHeader(const NesHeader& nesHeader);
+
+        bool assignMapper(unsigned mapperNo, std::vector<u8>&& prgRom, std::vector<u8>&& chrRom, MirroringType mirroringType);
 };
