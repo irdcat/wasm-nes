@@ -1,6 +1,7 @@
 #include "Cartridge.hpp"
 #include "Mapper0.hpp"
 #include "Mapper2.hpp"
+#include "Mapper3.hpp"
 
 bool Cartridge::loadFromFile(std::ifstream file)
 {
@@ -92,6 +93,9 @@ bool Cartridge::assignMapper(unsigned mapperNo, std::vector<u8> &&prgRom, std::v
         case 2:
             mapper = std::make_unique<Mapper2>(std::move(prgRom), std::move(chrRom), mirroringType);
             break;
+
+        case 3:
+            mapper = std::make_unique<Mapper3>(std::move(prgRom), std::move(chrRom), mirroringType);
 
         default:
             result = false;
