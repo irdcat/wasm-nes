@@ -1,4 +1,6 @@
 #include "Cartridge.hpp"
+#include "Mapper0.hpp"
+#include "Mapper2.hpp"
 
 bool Cartridge::loadFromFile(std::ifstream file)
 {
@@ -10,31 +12,15 @@ bool Cartridge::loadFromFile(std::ifstream file)
     file.read(reinterpret_cast<char*>(&headerData[0]), 16);
 
     auto nesHeaderData = parseNesHeader(headerData);
+    if(!nesHeaderData) {
+        return false;
+    }
+
+    std::vector<u8> prgRom;
+    std::vector<u8> chrRom;
 
     prgRom.resize(nesHeaderData->prgRomBanks * 0x4000);
-    if(nesHeaderData->chrRomBanks > 0) {
-        chrRom.resize(nesHeaderData->chrRomBanks * 0x2000);
-        usesChrRamInsteadOfChrRom = false;
-    } else {
-        chrRom.resize(0x2000);
-        usesChrRamInsteadOfChrRom = true;
-    }
-
-    using enum MirroringType;
-    switch (nesHeaderData->mirroring)
-    {
-        case Vertical:
-            nta[0] = nta[1] = 0;
-            nta[2] = nta[3] = 0x400;
-            break;
-        case Horizontal:
-            nta[0] = nta[2] = 0;
-            nta[1] = nta[3] = 0x400;
-            break;
-        default:
-            // Handle FourScreen mirroring case
-            break;
-    }
+    chrRom.resize(nesHeaderData->chrRomBanks * 0x2000);
 
     if(nesHeaderData->trainer) {
         file.ignore(512);
@@ -43,54 +29,28 @@ bool Cartridge::loadFromFile(std::ifstream file)
     file.read(reinterpret_cast<char*>(prgRom.data()), prgRom.size());
     file.read(reinterpret_cast<char*>(chrRom.data()), chrRom.size());
 
-    return true;
+    return assignMapper(nesHeaderData->mapperNo, std::move(prgRom), std::move(chrRom), nesHeaderData->mirroring);
 }
 
 void Cartridge::write(u16 addr, u8 value)
 {
-    if(addr < 0x2000 && !usesChrRamInsteadOfChrRom) {
+    if(!mapper) {
         return;
     }
-    if (addr >= 0x8000 && addr < 0xFFFF) {
-        return;
-    }
-
-    auto& ref = memoryRef(addr);
-    ref = value;
+    mapper->write(addr, value);
 }
 
 u8 Cartridge::read(u16 addr)
 {
-    return memoryRef(addr);
-}
-
-const std::vector<u8>& Cartridge::getChrRom()
-{
-    return chrRom;
-}
-
-u8 &Cartridge::memoryRef(u16 addr)
-{
-    static u8 dummyByte = 0;
-    if (addr < 0x2000 && chrRom.size() != 0) {
-        return chrRom[addr % chrRom.size()];
-    } else if (addr < 0x3F00) {
-        if(addr >= 0x3000) {
-            addr -= 0x1000;
-        }
-        auto nametableIndex = (addr >> 10) & 0x3;
-        auto nametableAddress = nta[nametableIndex];
-        auto effectiveAddress = nametableAddress + (addr & 0x3FF);
-        return chrRam[effectiveAddress];
-    } else if (addr >= 0x6000 && addr < 0x8000) {
-        auto prgRamAddr = (addr - 0x6000) % prgRam.size();
-        return prgRam[prgRamAddr];
-    } else if (addr >= 0x8000 && prgRom.size() != 0) {
-        auto prgRomAddr = (addr - 0x8000) % prgRom.size();
-        return prgRom[prgRomAddr]; 
+    if(!mapper) {
+        return 0;
     }
+    return mapper->read(addr);
+}
 
-    return dummyByte;
+MirroringType Cartridge::getMirroringType() const
+{
+    return mapper->getMirroringType();
 }
 
 std::unique_ptr<Cartridge::NesHeaderData> Cartridge::parseNesHeader(const NesHeader &nesHeader)
@@ -108,7 +68,7 @@ std::unique_ptr<Cartridge::NesHeaderData> Cartridge::parseNesHeader(const NesHea
         .mapperNo = static_cast<unsigned>((flags6 >> 4) | (flags7 & 0xF0)),
         .persistentMemory = static_cast<bool>(((flags6 & 0x2) >> 1)),
         .trainer = static_cast<bool>(((flags6 & 0x4) >> 2)),
-        .mirroring = ((flags6 & 0x8) >> 3) ? FourScreen : ((flags6 & 0x1) ? Horizontal : Vertical)
+        .mirroring = ((flags6 & 0x8) >> 3) ? FourScreen : ((flags6 & 0x1) ? Vertical : Horizontal)
     };
 
     return std::make_unique<NesHeaderData>(headerData);
@@ -118,4 +78,24 @@ bool Cartridge::isValidNesHeader(const NesHeader &nesHeader)
 {
     // So far only iNES 1.0 header is supported
     return std::string(&nesHeader[0], &nesHeader[4]) == "NES\x1A";
+}
+
+bool Cartridge::assignMapper(unsigned mapperNo, std::vector<u8> &&prgRom, std::vector<u8> &&chrRom, MirroringType mirroringType)
+{
+    auto result = true;
+    switch(mapperNo)
+    {
+        case 0:
+            mapper = std::make_unique<Mapper0>(std::move(prgRom), std::move(chrRom), mirroringType);
+            break;
+
+        case 2:
+            mapper = std::make_unique<Mapper2>(std::move(prgRom), std::move(chrRom), mirroringType);
+            break;
+
+        default:
+            result = false;
+            break;
+    }
+    return result;
 }

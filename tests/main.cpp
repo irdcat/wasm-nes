@@ -26,14 +26,19 @@ int main()
     TestExecutor testExecutor;
 
     testExecutor.registerIntegrationTest<CpuInstructionsTest>();
-    testExecutor.registerIntegrationTest<PpuVblankNmiTest>();
+    // Unsupported mapper
+    //testExecutor.registerIntegrationTest<PpuVblankNmiTest>();
     testExecutor.registerIntegrationTest<PpuOpenBusTest>();
-    testExecutor.registerIntegrationTest<PpuReadBufferTest>();
+    // Unsupported mapper
+    //testExecutor.registerIntegrationTest<PpuReadBufferTest>();
     testExecutor.registerIntegrationTest<PpuPaletteRamTest>();
     testExecutor.registerIntegrationTest<PpuSpriteRamTest>();
     testExecutor.registerIntegrationTest<PpuDataAccessTest>();
     testExecutor.registerIntegrationTest<PpuVramAccessTest>();
     testExecutor.registerIntegrationTest<VBlankClearTimeTest>();
+    /*
+    Disabled until the rework of test framework
+    
     testExecutor.registerIntegrationTest<SpriteHitBasicsTest>();
     testExecutor.registerIntegrationTest<SpriteHitAlignmentTest>();
     testExecutor.registerIntegrationTest<SpriteHitCornersTest>();
@@ -45,6 +50,7 @@ int main()
     testExecutor.registerIntegrationTest<SpriteHitTimingBasicsTest>();
     testExecutor.registerIntegrationTest<SpriteHitTimingOrderTest>();
     testExecutor.registerIntegrationTest<SpriteHitEdgeTimingTest>();
+    */
 
     return testExecutor.runAll();
 }

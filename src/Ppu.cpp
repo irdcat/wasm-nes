@@ -21,6 +21,7 @@ Ppu::Ppu(const std::shared_ptr<Cartridge>& cartridge,
     , tileAttributes(0)
     , bgShiftPattern(0)
     , bgShiftAttributes(0)
+    , vram()
     , oam()
     , oam2()
     , palette()
@@ -262,9 +263,12 @@ void Ppu::tick()
     // Close to the end of last scanline PPUSTATUS bits are reset
     if(scanline == 260 && renderingPositionX == 340) {
         ppuStatus.inVBlank = 0;
+        evenOddFrameToggle = !evenOddFrameToggle;
+    }
+
+    if(scanline == 261 && renderingPositionX == 1) {
         ppuStatus.spriteZeroHit = 0;
         ppuStatus.spriteOverflow = 0;
-        evenOddFrameToggle = !evenOddFrameToggle;
     }
 
     // Update rendering position and proceed to the next scanline 
@@ -706,13 +710,20 @@ void Ppu::decayOpenBus()
 u8 Ppu::ppuRead(u16 addr)
 {
     addr &= 0x3FFF;
-    // Addresses between 0x3F00 - 0x3FFF are occupied by a palette.
     if(addr >= 0x3F00) {
+        // Addresses between 0x3F00 - 0x3FFF are occupied by a palette.
         return paletteRef(addr & 0xFF);
-    }
+    } else if(addr >= 0x2000) {
+        // Addresses between 0x2F00 - 0x3EFF are occupied by a VRAM
+        if (addr >= 0x3000) {
+            addr -= 0x1000;
+        }
+        auto mirroringType = cartridge->getMirroringType();
+        addr = resolveNametableAddress(addr, mirroringType);
+        return vram[addr];
+    } 
 
-    // Read something from PPU bus
-    // For convienience VRAM is kept in the cartridge, because it's wiring dictates how nametables are mirrored
+    // Read something from cartridge.
     return cartridge->read(addr);
 }
 
@@ -722,15 +733,22 @@ u8 Ppu::ppuRead(u16 addr)
 void Ppu::ppuWrite(u16 addr, u8 value)
 {
     addr &= 0x3FFF;
-    // Addresses between 0x3F00 - 0x3FFF are occupied by a palette.
     if(addr >= 0x3F00) {
+        // Addresses between 0x3F00 - 0x3FFF are occupied by a palette.
         auto& palette = paletteRef(addr & 0xFF);
         palette = value;
         return;
+    } else if (addr >= 0x2000) {
+        // Addresses between 0x2000 - 0x3EFF are occupied by a VRAM
+        if (addr >= 0x3000) {
+            addr -= 0x1000;
+        }
+        auto mirroringType = cartridge->getMirroringType();
+        addr = resolveNametableAddress(addr, mirroringType);
+        vram[addr] = value;
     }
 
-    // Read something from PPU bus
-    // For convienience VRAM is kept in the cartridge, because it's wiring dictates how nametables are mirrored
+    // Read something from cartridge.
     cartridge->write(addr, value);
 }
 
@@ -754,4 +772,25 @@ u8& Ppu::paletteRef(u8 addr)
     }
 
     return palette[addr];
+}
+
+u16 Ppu::resolveNametableAddress(u16 addr, MirroringType mirroringType)
+{
+    using enum MirroringType;
+    switch (mirroringType)
+    {
+        case Horizontal: 
+            addr = addr & 0x3FF | ((addr & 0x800) >> 1);
+            break;
+        
+        case Vertical:
+            addr = addr & 0x3FF | (addr & 0x400);
+            break;
+        
+        default:
+            // TODO: Handle other types of mirroring
+            addr &= 0x7FF;
+            break;
+    }
+    return addr;
 }

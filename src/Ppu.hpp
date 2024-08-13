@@ -7,6 +7,7 @@
 #include "OamData.hpp"
 #include "Cartridge.hpp"
 #include "PpuRegisters.hpp"
+#include "MirroringType.hpp"
 
 /**
  * PPU - Picture Processing Unit
@@ -62,6 +63,7 @@ class Ppu
         u32 bgShiftPattern;
         u32 bgShiftAttributes;
 
+        std::array<u8, 0x800> vram;
         std::array<u8, 256> oam;
         std::array<OamData, 8> oam2;
         std::array<OamData, 8> oam3;
@@ -93,6 +95,7 @@ class Ppu
         void ppuWrite(u16 addr, u8 value);
 
         u8& paletteRef(u8 addr);
+        u16 resolveNametableAddress(u16 addr, MirroringType mirroring);
 
         static constexpr const unsigned OPEN_BUS_DECAY_TICKS = 77777;
 };
