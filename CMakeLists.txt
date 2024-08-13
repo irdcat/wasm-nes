@@ -10,6 +10,7 @@ if(EMSCRIPTEN)
         src/Mapper.cpp
         src/Mapper0.cpp
         src/Mapper2.cpp
+        src/Mapper3.cpp
         src/Controllers.cpp
         src/Emulator.cpp
         src/main.cpp)
@@ -30,6 +31,7 @@ if(NOT EMSCRIPTEN AND TESTS)
         src/Mapper.cpp
         src/Mapper0.cpp
         src/Mapper2.cpp
+        src/Mapper3.cpp
         src/Controllers.cpp)
     set(TEST_SOURCES
         tests/util/SystemUnderTest.cpp
