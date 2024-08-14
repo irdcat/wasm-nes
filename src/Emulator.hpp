@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Cpu.hpp"
-#include "Mmu.hpp"
-#include "Ppu.hpp"
-#include "Cartridge.hpp"
-#include "Controllers.hpp"
+#include "core/Cpu.hpp"
+#include "core/Mmu.hpp"
+#include "core/Ppu.hpp"
+#include "core/Cartridge.hpp"
+#include "core/Controllers.hpp"
 #include "SdlResource.hpp"
 
 class Emulator

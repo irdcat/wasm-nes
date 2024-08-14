@@ -3,16 +3,16 @@ project(wasm-nes)
 
 if(EMSCRIPTEN)
     set(APP_SOURCES
-        src/Cpu.cpp
-        src/Mmu.cpp
-        src/Ppu.cpp
-        src/Cartridge.cpp
-        src/Mapper.cpp
-        src/Mapper0.cpp
-        src/Mapper2.cpp
-        src/Mapper3.cpp
-        src/Mapper7.cpp
-        src/Controllers.cpp
+        src/core/Cpu.cpp
+        src/core/Mmu.cpp
+        src/core/Ppu.cpp
+        src/core/Cartridge.cpp
+        src/core/Mapper.cpp
+        src/core/Mapper0.cpp
+        src/core/Mapper2.cpp
+        src/core/Mapper3.cpp
+        src/core/Mapper7.cpp
+        src/core/Controllers.cpp
         src/Emulator.cpp
         src/main.cpp)
     set(CMAKE_EXECUTABLE_SUFFIX ".js")
@@ -25,16 +25,16 @@ endif()
 
 if(NOT EMSCRIPTEN AND TESTS)
     set(APP_LIB_SOURCES
-        src/Cpu.cpp
-        src/Mmu.cpp
-        src/Ppu.cpp
-        src/Cartridge.cpp
-        src/Mapper.cpp
-        src/Mapper0.cpp
-        src/Mapper2.cpp
-        src/Mapper3.cpp
-        src/Mapper7.cpp
-        src/Controllers.cpp)
+        src/core/Cpu.cpp
+        src/core/Mmu.cpp
+        src/core/Ppu.cpp
+        src/core/Cartridge.cpp
+        src/core/Mapper.cpp
+        src/core/Mapper0.cpp
+        src/core/Mapper2.cpp
+        src/core/Mapper3.cpp
+        src/core/Mapper7.cpp
+        src/core/Controllers.cpp)
     set(TEST_SOURCES
         tests/util/SystemUnderTest.cpp
         tests/util/IntegrationTest.cpp
