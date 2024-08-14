@@ -2,6 +2,7 @@
 #include "Mapper0.hpp"
 #include "Mapper2.hpp"
 #include "Mapper3.hpp"
+#include "Mapper7.hpp"
 
 bool Cartridge::loadFromFile(std::ifstream file)
 {
@@ -96,6 +97,11 @@ bool Cartridge::assignMapper(unsigned mapperNo, std::vector<u8> &&prgRom, std::v
 
         case 3:
             mapper = std::make_unique<Mapper3>(std::move(prgRom), std::move(chrRom), mirroringType);
+            break;
+
+        case 7:
+            mapper = std::make_unique<Mapper7>(std::move(prgRom), std::move(chrRom));
+            break;
 
         default:
             result = false;

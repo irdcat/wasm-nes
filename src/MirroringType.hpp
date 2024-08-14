@@ -4,6 +4,7 @@ enum class MirroringType
 {
     Horizontal,
     Vertical,
-    FourScreen,
-    SingleScreen
+    SingleScreenLow,
+    SingleScreenHigh,
+    FourScreen
 };
