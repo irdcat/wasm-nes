@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../../src/Cpu.hpp"
-#include "../../src/Ppu.hpp"
-#include "../../src/Mmu.hpp"
-#include "../../src/Cartridge.hpp"
-#include "../../src/Controllers.hpp"
+#include "../../src/core/Cpu.hpp"
+#include "../../src/core/Ppu.hpp"
+#include "../../src/core/Mmu.hpp"
+#include "../../src/core/Cartridge.hpp"
+#include "../../src/core/Controllers.hpp"
 
 class SystemUnderTest
 {
