@@ -37,6 +37,9 @@ const CANVAS_ID = "canvas";
 var Module = {
     onRuntimeInitialized: function() {
         Module.ccall('run', null, null, null);
+        let canvasContainer = this.canvas.parentElement;
+        this.canvas.width = canvasContainer.clientWidth;
+        this.canvas.height = canvasContainer.clientHeight;
     },
     
     canvas: (function(){
