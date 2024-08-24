@@ -73,11 +73,10 @@ u8 Ppu::read(u8 index)
         } else {
             // Read byte from OAM
             result = oam[registers.oamAddr];
-            // Bits 2,3,4 of sprite attributes in OAM are not used
-            // Q: Does the unused bits should be populated with open bus data?
-            if ((registers.oamAddr.spriteDataIndex) == 2) {
-                result &= 0xE3;
-            }
+        }
+        // Bits 2,3,4 of sprite attributes in OAM are not used
+        if ((registers.oamAddr.spriteDataIndex) == 2) {
+            result &= 0xE3;
         }
         refreshOpenBus(result);
     } else if (index == 7) { // 0x2007 PPUDATA - Ppu data register
