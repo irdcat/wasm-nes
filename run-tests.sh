@@ -1,5 +1,5 @@
-set -e
+set -ex
 
 cd ./build/tests
-./wasm-nes-tests
+node wasm-nes-tests.js
 cd ../../
