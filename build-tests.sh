@@ -1,7 +1,9 @@
-set -e
+set -ex
 
-cmake . -B build/tests -G "Unix Makefiles" -DTESTS:BOOLEAN=true
-cmake --build build/tests
+emcmake cmake . -B build/tests -G "Unix Makefiles" -DTESTS:BOOLEAN=true
 
-cp ./tests/resources/*.nes ./build/tests
-cp ./tests/resources/*.log ./build/tests
+mkdir -p ./build/tests/resources
+cp ./tests/resources/* ./build/tests/resources
+cd build/tests
+make
+cd ../..

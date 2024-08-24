@@ -115,9 +115,9 @@ class CpuInstructionsTest : public IntegrationTest
         {
             auto cartridge = getSystemUnderTest()->getCartridge();
             auto cpu = getSystemUnderTest()->getCpu();
-            auto logStream = std::ifstream("nestest.log");
+            auto logStream = std::ifstream("resources/nestest.log");
             nesTestLogParser = std::make_unique<NesTestLogParser>(std::move(logStream));
-            if(cartridge->loadFromFile(std::ifstream("nestest.nes", std::ios::binary))) {
+            if(cartridge->loadFromFile(std::ifstream("resources/nestest.nes", std::ios::binary))) {
                 cpu->reset();
                 cpu->getRegisters().pc = 0xC000;
                 return true;

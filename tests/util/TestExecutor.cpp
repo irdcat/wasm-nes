@@ -1,5 +1,6 @@
 #include "TestExecutor.hpp"
 #include <iostream>
+#include <sstream>
 #include <iomanip>
 
 TestExecutor::TestExecutor()

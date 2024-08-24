@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 project(wasm-nes)
 
-if(EMSCRIPTEN)
+if(NOT TESTS)
     set(APP_SOURCES
         src/core/Cpu.cpp
         src/core/Mmu.cpp
@@ -15,6 +15,7 @@ if(EMSCRIPTEN)
         src/core/Controllers.cpp
         src/Emulator.cpp
         src/main.cpp)
+    set(CXX_STANDARD 20)
     set(CMAKE_EXECUTABLE_SUFFIX ".js")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -O3")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sWASM=1 -sASYNCIFY -sALLOW_MEMORY_GROWTH=1 -sUSE_SDL=2 -sFORCE_FILESYSTEM=1")
@@ -23,7 +24,8 @@ if(EMSCRIPTEN)
     add_executable(wasm-nes ${APP_SOURCES})
 endif()
 
-if(NOT EMSCRIPTEN AND TESTS)
+if(TESTS)
+    set(TEST_RESOURCES_DIR "./resources/")
     set(APP_LIB_SOURCES
         src/core/Cpu.cpp
         src/core/Mmu.cpp
@@ -42,7 +44,9 @@ if(NOT EMSCRIPTEN AND TESTS)
         tests/util/TestExecutor.cpp
         tests/main.cpp)
     set(CXX_STANDARD 20)
+    set(CMAKE_EXECUTABLE_SUFFIX ".js")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -g")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --preload-file ${TEST_RESOURCES_DIR}")
 
     add_library(wasm-nes ${APP_LIB_SOURCES})
     add_executable(wasm-nes-tests ${TEST_SOURCES})
