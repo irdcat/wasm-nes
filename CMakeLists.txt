@@ -15,7 +15,7 @@ if(NOT TESTS)
         src/core/Controllers.cpp
         src/Emulator.cpp
         src/main.cpp)
-    set(CXX_STANDARD 20)
+    set(CMAKE_CXX_STANDARD 20)
     set(CMAKE_EXECUTABLE_SUFFIX ".js")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -O3")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sWASM=1 -sASYNCIFY -sALLOW_MEMORY_GROWTH=1 -sUSE_SDL=2 -sFORCE_FILESYSTEM=1")
@@ -39,16 +39,23 @@ if(TESTS)
         src/core/Controllers.cpp)
     set(TEST_SOURCES
         tests/util/SystemUnderTest.cpp
-        tests/util/IntegrationTest.cpp
-        tests/util/Test.cpp
-        tests/util/TestExecutor.cpp
-        tests/main.cpp)
-    set(CXX_STANDARD 20)
+        tests/util/NesTestLogParser.cpp
+        tests/CpuInstructionsTest.cpp)
+    set(CMAKE_CXX_STANDARD 20)
     set(CMAKE_EXECUTABLE_SUFFIX ".js")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -g")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --preload-file ${TEST_RESOURCES_DIR}")
 
+    include(FetchContent)
+    FetchContent_Declare(
+        google-test
+        URL https://github.com/google/googletest/archive/b514bdc898e2951020cbdca1304b75f5950d1f59.zip)
+    FetchContent_MakeAvailable(google-test)
+
     add_library(wasm-nes ${APP_LIB_SOURCES})
     add_executable(wasm-nes-tests ${TEST_SOURCES})
-    target_link_libraries(wasm-nes-tests wasm-nes)
+    target_link_libraries(
+        wasm-nes-tests 
+        wasm-nes
+        GTest::gtest_main)
 endif()
