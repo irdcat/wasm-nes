@@ -40,7 +40,9 @@ if(TESTS)
     set(TEST_SOURCES
         tests/util/SystemUnderTest.cpp
         tests/util/NesTestLogParser.cpp
-        tests/CpuInstructionsTest.cpp)
+        tests/util/BlarggRomTest.cpp
+        tests/CpuInstructionsTest.cpp
+        tests/PpuOpenBusTest.cpp)
     set(CMAKE_CXX_STANDARD 20)
     set(CMAKE_EXECUTABLE_SUFFIX ".js")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -g")
