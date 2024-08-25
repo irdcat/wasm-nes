@@ -45,6 +45,7 @@ if(TESTS)
         tests/CpuInstructionsTestV5.cpp
         tests/CpuInstructionTimingTest.cpp
         tests/CpuMiscTest.cpp
+        tests/CpuResetTest.cpp
         tests/PpuOpenBusTest.cpp)
     set(CMAKE_CXX_STANDARD 20)
     set(CMAKE_EXECUTABLE_SUFFIX ".js")
