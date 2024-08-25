@@ -46,6 +46,7 @@ if(TESTS)
         tests/CpuInstructionTimingTest.cpp
         tests/CpuMiscTest.cpp
         tests/CpuResetTest.cpp
+        tests/PpuOamTest.cpp
         tests/PpuOpenBusTest.cpp
         tests/PpuVblankNmiTest.cpp)
     set(CMAKE_CXX_STANDARD 20)

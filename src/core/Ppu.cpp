@@ -67,13 +67,8 @@ u8 Ppu::read(u8 index)
         // that is used by PPUSCROLL and PPUADDR registers 
         offsetToggleLatch = false;
     } else if (index == 4) { // 0x2004 OAMDATA - OAM data port
-        if (scanline < 240 && renderingPositionX <= 64) {
-            // Before sprite evaluation, reads from 0x2004 always return 0xFF
-            result = 0xFF;
-        } else {
-            // Read byte from OAM
-            result = oam[registers.oamAddr];
-        }
+        // Read byte from OAM
+        result = oam[registers.oamAddr];
         // Bits 2,3,4 of sprite attributes in OAM are not used
         if ((registers.oamAddr.spriteDataIndex) == 2) {
             result &= 0xE3;
