@@ -44,6 +44,7 @@ if(TESTS)
         tests/CpuInstructionsTest.cpp
         tests/CpuInstructionsTestV5.cpp
         tests/CpuInstructionTimingTest.cpp
+        tests/CpuInterruptsTest.cpp
         tests/CpuMiscTest.cpp
         tests/CpuResetTest.cpp
         tests/PpuOamTest.cpp
