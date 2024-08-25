@@ -42,3 +42,15 @@ TEST_F(CpuMiscTest, DummyReadsApu)
     auto result = run("resources/instr_misc/dummy_reads_apu.nes");
     ASSERT_EQ(0, result) << (result == 0x100 ? "Failed to load ROM" : readMessage());
 }
+
+TEST_F(CpuMiscTest, DummyWritesOam)
+{
+    auto result = run("resources/instr_misc/cpu_dummy_writes_oam.nes");
+    ASSERT_EQ(0, result) << (result == 0x100 ? "Failed to load ROM" : readMessage());
+}
+
+TEST_F(CpuMiscTest, DummyWritesPpuMemory)
+{
+    auto result = run("resources/instr_misc/cpu_dummy_writes_ppumem.nes");
+    ASSERT_EQ(0, result) << (result == 0x100 ? "Failed to load ROM" : readMessage());
+}
