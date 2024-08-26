@@ -57,9 +57,12 @@ TEST_F(CpuInstructionsTest, Test)
     auto cpu = systemUnderTest->getCpu();
     auto mmu = systemUnderTest->getMmu();
     auto cycleCount = 0;
+    const unsigned EXPECTED_LINES = 8991;
+    auto parsedLines = 0;
     while(nesTestLogParser->canParseNextLine())
     {
         auto expected = nesTestLogParser->parseNextLine();
+        parsedLines++;
         auto registers = cpu->getRegisters();
         auto lineNumber = expected.lineNumber;
 
@@ -78,4 +81,5 @@ TEST_F(CpuInstructionsTest, Test)
 
         cpu->executeInstruction(opcode);
     }
+    ASSERT_EQ(EXPECTED_LINES, parsedLines) << "Parsed amount of lines does not match the expectation";
 }
