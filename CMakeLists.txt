@@ -40,6 +40,7 @@ if(TESTS)
     set(TEST_SOURCES
         tests/util/SystemUnderTest.cpp
         tests/util/NesTestLogParser.cpp
+        tests/util/GenericRomTest.cpp
         tests/util/BlarggRomTest.cpp
         tests/CpuInstructionsTest.cpp
         tests/CpuInstructionsTestV5.cpp
@@ -47,6 +48,7 @@ if(TESTS)
         tests/CpuInterruptsTest.cpp
         tests/CpuMiscTest.cpp
         tests/CpuResetTest.cpp
+        tests/PpuGeneralTest.cpp
         tests/PpuOamTest.cpp
         tests/PpuOpenBusTest.cpp
         tests/PpuSpriteHitTest.cpp
