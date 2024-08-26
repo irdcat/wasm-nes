@@ -1,4 +1,4 @@
-set -ex
+set -e
 
 emcmake cmake . -B build/tests -G "Unix Makefiles" -DTESTS:BOOLEAN=true
 

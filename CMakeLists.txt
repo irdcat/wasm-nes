@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22)
 project(wasm-nes)
 
 if(NOT TESTS)
-    set(APP_SOURCES
+    set(WASM_NES_SOURCES
         src/core/Cpu.cpp
         src/core/Mmu.cpp
         src/core/Ppu.cpp
@@ -17,16 +17,26 @@ if(NOT TESTS)
         src/main.cpp)
     set(CMAKE_CXX_STANDARD 20)
     set(CMAKE_EXECUTABLE_SUFFIX ".js")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -O3")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sWASM=1 -sASYNCIFY -sALLOW_MEMORY_GROWTH=1 -sUSE_SDL=2 -sFORCE_FILESYSTEM=1")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -sEXPORTED_FUNCTIONS=_run,_loadRom -sEXPORTED_RUNTIME_METHODS=ccall")
-    
-    add_executable(wasm-nes ${APP_SOURCES})
+    set(WASM_NES_COMPILE_OPTIONS
+        -std=c++20
+        -O3
+        -sUSE_SDL=2)
+    set(WASM_NES_LINK_OPTIONS
+        -sWASM=1
+        -sASYNCIFY
+        -sALLOW_MEMORY_GROWTH 
+        -sUSE_SDL=2 
+        -sFORCE_FILESYSTEM=1 
+        -sEXPORTED_FUNCTIONS=_run,_loadRom 
+        -sEXPORTED_RUNTIME_METHODS=ccall)
+    add_executable(wasm-nes ${WASM_NES_SOURCES})
+    target_compile_options(wasm-nes PUBLIC ${WASM_NES_COMPILE_OPTIONS})
+    target_link_options(wasm-nes PUBLIC ${WASM_NES_LINK_OPTIONS})
 endif()
 
 if(TESTS)
     set(TEST_RESOURCES_DIR "./resources/")
-    set(APP_LIB_SOURCES
+    set(WASM_NES_SOURCES
         src/core/Cpu.cpp
         src/core/Mmu.cpp
         src/core/Ppu.cpp
@@ -37,7 +47,7 @@ if(TESTS)
         src/core/Mapper3.cpp
         src/core/Mapper7.cpp
         src/core/Controllers.cpp)
-    set(TEST_SOURCES
+    set(WASM_NES_TESTS_SOURCES
         tests/util/SystemUnderTest.cpp
         tests/util/NesTestLogParser.cpp
         tests/util/GenericRomTest.cpp
@@ -55,8 +65,10 @@ if(TESTS)
         tests/PpuVblankNmiTest.cpp)
     set(CMAKE_CXX_STANDARD 20)
     set(CMAKE_EXECUTABLE_SUFFIX ".js")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -g")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --preload-file ${TEST_RESOURCES_DIR}")
+    set(WASM_NES_COMPILE_OPTIONS
+        -std=c++20)
+    set(WASM_NES_LINK_OPTIONS
+        --preload-file ${TEST_RESOURCES_DIR})
 
     include(FetchContent)
     FetchContent_Declare(
@@ -64,8 +76,10 @@ if(TESTS)
         URL https://github.com/google/googletest/archive/b514bdc898e2951020cbdca1304b75f5950d1f59.zip)
     FetchContent_MakeAvailable(google-test)
 
-    add_library(wasm-nes ${APP_LIB_SOURCES})
-    add_executable(wasm-nes-tests ${TEST_SOURCES})
+    add_library(wasm-nes ${WASM_NES_SOURCES})
+    target_compile_options(wasm-nes PUBLIC ${WASM_NES_COMPILE_OPTIONS})
+    target_link_options(wasm-nes PUBLIC ${WASM_NES_LINK_OPTIONS})
+    add_executable(wasm-nes-tests ${WASM_NES_TESTS_SOURCES})
     target_link_libraries(
         wasm-nes-tests 
         wasm-nes

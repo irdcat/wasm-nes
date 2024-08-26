@@ -1,3 +1,3 @@
 cd .\build\tests
-.\wasm-nes-tests.exe
+node wasm-nes-tests.js
 cd ..\..

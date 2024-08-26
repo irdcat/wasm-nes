@@ -1,3 +1,5 @@
+$ErrorActionPreference = "Stop"
+
 emcmake cmake . -B build -G "Unix Makefiles"
 
 Copy-Item .\src\web\index.html .\build -Force
