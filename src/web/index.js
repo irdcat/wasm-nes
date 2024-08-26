@@ -21,12 +21,12 @@ function loadRom() {
     fileReader.readAsArrayBuffer(file);
 }
 
-function runRom(e) {
+async function runRom(e) {
     let result = fileReader.result;
     const resultByteArray = new Uint8Array(result);
     const memFsFilename = "rom.nes"
     FS.writeFile(memFsFilename, resultByteArray);
-    Module.ccall('loadRom', null, ['string'], [memFsFilename], { async: true });
+    await Module.ccall('loadRom', null, ['string'], [memFsFilename], { async: true });
 }
 
 /**
@@ -36,7 +36,7 @@ const CANVAS_ID = "canvas";
 
 var Module = {
     onRuntimeInitialized: function() {
-        Module.ccall('run', null, null, null);
+        Module.ccall('run', null, null, null, { async: false });
         let canvasContainer = this.canvas.parentElement;
         this.canvas.width = canvasContainer.clientWidth;
         this.canvas.height = canvasContainer.clientHeight;
