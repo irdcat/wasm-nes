@@ -9,6 +9,7 @@ if(NOT TESTS)
         src/core/Cartridge.cpp
         src/core/Mapper.cpp
         src/core/Mapper0.cpp
+        src/core/Mapper1.cpp
         src/core/Mapper2.cpp
         src/core/Mapper3.cpp
         src/core/Mapper7.cpp
@@ -44,6 +45,7 @@ if(TESTS)
         src/core/Cartridge.cpp
         src/core/Mapper.cpp
         src/core/Mapper0.cpp
+        src/core/Mapper1.cpp
         src/core/Mapper2.cpp
         src/core/Mapper3.cpp
         src/core/Mapper7.cpp
