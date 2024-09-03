@@ -210,12 +210,16 @@ void Ppu::tick()
             // In paralallel sprite evaluation also happens
             evaluateSprites();
         }
+        
         // At dot 337 of pre-render scanline and if background rendering is enabled
         // and odd frame is rendered, pre-render scanline is set to be 1 dot shorter 
         if(renderingPositionX == 337 && scanline == 261 && evenOddFrameToggle && ppuMask.showBg) {
             scanlineEndPosition = 340;
         }
         if (ppuMask.showBgSp) {
+            if (renderingPositionX == 260) {
+                cartridge->tickScanlineIrq();
+            }
             // On every 8th dot in range 0..255 or 320..335 starting from 3rd horizontal scroll is incremented
             if(renderingPositionX % 8 == 3 
                 && (renderingPositionX < 256 || (renderingPositionX >= 320 && renderingPositionX < 335))) {
@@ -714,7 +718,9 @@ u8 Ppu::ppuRead(u16 addr)
         }
         auto mirroringType = cartridge->getMirroringType();
         addr = resolveNametableAddress(addr, mirroringType);
-        return vram[addr];
+        if (mirroringType != MirroringType::FourScreen) {
+            return vram[addr];
+        }
     } 
 
     // Read something from cartridge.
@@ -739,7 +745,9 @@ void Ppu::ppuWrite(u16 addr, u8 value)
         }
         auto mirroringType = cartridge->getMirroringType();
         addr = resolveNametableAddress(addr, mirroringType);
-        vram[addr] = value;
+        if (mirroringType != MirroringType::FourScreen) {
+            vram[addr] = value;
+        }
     }
 
     // Read something from cartridge.
@@ -790,8 +798,6 @@ u16 Ppu::resolveNametableAddress(u16 addr, MirroringType mirroringType)
             break;
 
         default:
-            // TODO: Handle other types of mirroring
-            addr &= 0x7FF;
             break;
     }
     return addr;

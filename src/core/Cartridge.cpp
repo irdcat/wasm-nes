@@ -3,7 +3,15 @@
 #include "Mapper1.hpp"
 #include "Mapper2.hpp"
 #include "Mapper3.hpp"
+#include "Mapper4.hpp"
 #include "Mapper7.hpp"
+
+#include <iostream>
+
+Cartridge::Cartridge(const std::function<void()> &irqCallback)
+    : irqCallback (irqCallback)
+{
+}
 
 bool Cartridge::loadFromFile(std::ifstream file)
 {
@@ -56,6 +64,11 @@ MirroringType Cartridge::getMirroringType() const
     return mapper->getMirroringType();
 }
 
+void Cartridge::tickScanlineIrq() const
+{
+    mapper->tickScanlineIrq();
+}
+
 std::unique_ptr<Cartridge::NesHeaderData> Cartridge::parseNesHeader(const NesHeader &nesHeader)
 {
     using enum MirroringType;
@@ -86,6 +99,7 @@ bool Cartridge::isValidNesHeader(const NesHeader &nesHeader)
 bool Cartridge::assignMapper(unsigned mapperNo, std::vector<u8> &&prgRom, std::vector<u8> &&chrRom, MirroringType mirroringType)
 {
     auto result = true;
+    std::cout << mapperNo << std::endl;
     switch(mapperNo)
     {
         case 0:
@@ -102,6 +116,10 @@ bool Cartridge::assignMapper(unsigned mapperNo, std::vector<u8> &&prgRom, std::v
 
         case 3:
             mapper = std::make_unique<Mapper3>(std::move(prgRom), std::move(chrRom), mirroringType);
+            break;
+
+        case 4:
+            mapper = std::make_unique<Mapper4>(std::move(prgRom), std::move(chrRom), mirroringType, irqCallback);
             break;
 
         case 7:

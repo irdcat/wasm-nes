@@ -19,6 +19,8 @@ class Mapper
 
         virtual MirroringType getMirroringType() = 0;
 
+        virtual void tickScanlineIrq();
+
     protected:
         std::vector<u8> prgRom;
         std::vector<u8> chrRom;

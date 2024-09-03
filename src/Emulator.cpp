@@ -6,16 +6,20 @@ Emulator::Emulator()
     : shouldRun(false)
 {
     controllers = std::make_shared<Controllers>();
-    cartridge = std::make_shared<Cartridge>();
     
     auto nmiTriggerCallback = [this](){
         cpu->interrupt(InterruptType::NMI);
+    };
+
+    auto irqTriggerCallback = [this](){
+        cpu->interrupt(InterruptType::IRQ);
     };
 
     auto vblankInterruptCallback = [this](){
         updateScreen();
     };
 
+    cartridge = std::make_shared<Cartridge>(irqTriggerCallback);
     ppu = std::make_shared<Ppu>(cartridge, nmiTriggerCallback, vblankInterruptCallback);
     mmu = std::make_shared<Mmu>(ppu, cartridge, controllers);
     cpu = std::make_shared<Cpu>(mmu);

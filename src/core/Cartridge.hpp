@@ -12,7 +12,7 @@
 class Cartridge
 {
     public:
-        Cartridge() = default;
+        Cartridge(const std::function<void()>& irqCallback);
 
         bool loadFromFile(std::ifstream file);
 
@@ -22,8 +22,11 @@ class Cartridge
 
         MirroringType getMirroringType() const;
 
+        void tickScanlineIrq() const;
+
     private:
         std::unique_ptr<Mapper> mapper;
+        std::function<void()> irqCallback;
 
         struct NesHeaderData
         {

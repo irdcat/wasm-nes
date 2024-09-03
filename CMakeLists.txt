@@ -12,6 +12,7 @@ if(NOT TESTS)
         src/core/Mapper1.cpp
         src/core/Mapper2.cpp
         src/core/Mapper3.cpp
+        src/core/Mapper4.cpp
         src/core/Mapper7.cpp
         src/core/Controllers.cpp
         src/Emulator.cpp
@@ -48,6 +49,7 @@ if(TESTS)
         src/core/Mapper1.cpp
         src/core/Mapper2.cpp
         src/core/Mapper3.cpp
+        src/core/Mapper4.cpp
         src/core/Mapper7.cpp
         src/core/Controllers.cpp)
     set(WASM_NES_TESTS_SOURCES

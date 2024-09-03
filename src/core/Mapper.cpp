@@ -7,3 +7,7 @@ Mapper::Mapper(std::vector<u8> &&prgRom, std::vector<u8> &&chrRom, MirroringType
     , mirroringType(mirroringType)
 {
 }
+
+void Mapper::tickScanlineIrq()
+{
+}
