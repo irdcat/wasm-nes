@@ -16,11 +16,11 @@ See the list below for the current status of implementation of the mappers, to s
 
 | Mapper ID | Mapper name | Games                                                |
 |-----------|-------------|------------------------------------------------------|
-| 0         | NROM        | [List](https://nescartdb.com/search/advanced?ines=0) |
-| 1         | SNROM       | [List](https://nescartdb.com/search/advanced?ines=1) |
-| 2         | UNROM       | [List](https://nescartdb.com/search/advanced?ines=2) |
-| 3         | CNROM       | [List](https://nescartdb.com/search/advanced?ines=3) |
-| 7         | ANROM       | [List](https://nescartdb.com/search/advanced?ines=7) |
+| 0         | NROM        | [57 Games](https://nescartdb.com/search/advanced?region_op=equal&region=USA&system_op=equal&system=NTSC&ines_op=equal&ines=0&page=1) |
+| 1         | SNROM       | [224 Games](https://nescartdb.com/search/advanced?region_op=equal&region=USA&system_op=equal&system=NTSC&ines_op=equal&ines=1&page=1) |
+| 2         | UNROM       | [94 Games](https://nescartdb.com/search/advanced?region_op=equal&region=USA&system_op=equal&system=NTSC&ines_op=equal&ines=2&page=1) |
+| 3         | CNROM       | [62 Games](https://nescartdb.com/search/advanced?region_op=equal&region=USA&system_op=equal&system=NTSC&ines_op=equal&ines=3&page=1) |
+| 7         | ANROM       | [31 Games](https://nescartdb.com/search/advanced?region_op=equal&region=USA&system_op=equal&system=NTSC&ines_op=equal&ines=7&page=1) |
 
 ### Known issues
 
