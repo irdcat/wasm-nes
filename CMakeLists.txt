@@ -7,12 +7,12 @@ if(NOT TESTS)
         src/core/Mmu.cpp
         src/core/Ppu.cpp
         src/core/Cartridge.cpp
-        src/core/Mapper.cpp
-        src/core/Mapper0.cpp
-        src/core/Mapper1.cpp
-        src/core/Mapper2.cpp
-        src/core/Mapper3.cpp
-        src/core/Mapper7.cpp
+        src/core/mapper/Mapper.cpp
+        src/core/mapper/Mapper0.cpp
+        src/core/mapper/Mapper1.cpp
+        src/core/mapper/Mapper2.cpp
+        src/core/mapper/Mapper3.cpp
+        src/core/mapper/Mapper7.cpp
         src/core/Controllers.cpp
         src/Emulator.cpp
         src/main.cpp)
@@ -43,12 +43,12 @@ if(TESTS)
         src/core/Mmu.cpp
         src/core/Ppu.cpp
         src/core/Cartridge.cpp
-        src/core/Mapper.cpp
-        src/core/Mapper0.cpp
-        src/core/Mapper1.cpp
-        src/core/Mapper2.cpp
-        src/core/Mapper3.cpp
-        src/core/Mapper7.cpp
+        src/core/mapper/Mapper.cpp
+        src/core/mapper/Mapper0.cpp
+        src/core/mapper/Mapper1.cpp
+        src/core/mapper/Mapper2.cpp
+        src/core/mapper/Mapper3.cpp
+        src/core/mapper/Mapper7.cpp
         src/core/Controllers.cpp)
     set(WASM_NES_TESTS_SOURCES
         tests/util/SystemUnderTest.cpp

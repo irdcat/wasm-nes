@@ -3,8 +3,8 @@
 #include <array>
 #include <vector>
 
-#include "Types.hpp"
-#include "MirroringType.hpp"
+#include "../Types.hpp"
+#include "../MirroringType.hpp"
 
 class Mapper
 {

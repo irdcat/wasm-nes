@@ -1,9 +1,9 @@
 #include "Cartridge.hpp"
-#include "Mapper0.hpp"
-#include "Mapper1.hpp"
-#include "Mapper2.hpp"
-#include "Mapper3.hpp"
-#include "Mapper7.hpp"
+#include "mapper/Mapper0.hpp"
+#include "mapper/Mapper1.hpp"
+#include "mapper/Mapper2.hpp"
+#include "mapper/Mapper3.hpp"
+#include "mapper/Mapper7.hpp"
 
 bool Cartridge::loadFromFile(std::ifstream file)
 {

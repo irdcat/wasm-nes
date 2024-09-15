@@ -7,7 +7,7 @@
 
 #include "Types.hpp"
 #include "MirroringType.hpp"
-#include "Mapper.hpp"
+#include "mapper/Mapper.hpp"
 
 class Cartridge
 {
