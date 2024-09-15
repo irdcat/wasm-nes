@@ -1,6 +1,6 @@
 #pragma once
 
-#include "RegisterBit.hpp"
+#include "../RegisterBit.hpp"
 
 union Mapper1ControlRegister
 {
