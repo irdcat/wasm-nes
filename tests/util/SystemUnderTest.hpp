@@ -5,6 +5,7 @@
 #include "../../src/core/Mmu.hpp"
 #include "../../src/core/Cartridge.hpp"
 #include "../../src/core/Controllers.hpp"
+#include "../../src/core/Apu.hpp"
 
 class SystemUnderTest
 {
@@ -23,7 +24,10 @@ class SystemUnderTest
 
         Controllers* getControllers();
 
+        Apu* getApu();
+
     private:
+        std::shared_ptr<Apu> apu;
         std::shared_ptr<Controllers> controllers;
         std::shared_ptr<Cartridge> cartridge;
         std::shared_ptr<Ppu> ppu;

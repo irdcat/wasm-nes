@@ -6,6 +6,9 @@ if(NOT TESTS)
         src/core/Cpu.cpp
         src/core/Mmu.cpp
         src/core/Ppu.cpp
+        src/core/Apu.cpp
+        src/core/apu/AudioChannel.cpp
+        src/core/apu/PulseChannel.cpp
         src/core/Cartridge.cpp
         src/core/mapper/Mapper.cpp
         src/core/mapper/Mapper0.cpp
@@ -42,6 +45,9 @@ if(TESTS)
         src/core/Cpu.cpp
         src/core/Mmu.cpp
         src/core/Ppu.cpp
+        src/core/Apu.cpp
+        src/core/apu/AudioChannel.cpp
+        src/core/apu/PulseChannel.cpp
         src/core/Cartridge.cpp
         src/core/mapper/Mapper.cpp
         src/core/mapper/Mapper0.cpp

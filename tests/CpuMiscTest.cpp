@@ -38,7 +38,7 @@ TEST_F(CpuMiscTest, DummyReads)
 
 TEST_F(CpuMiscTest, DummyReadsApu)
 {
-    GTEST_SKIP() << "Ignored due to lack of $4015 IRQ flag implementation";
+    GTEST_SKIP() << "Needs attention";
     auto result = run("resources/instr_misc/dummy_reads_apu.nes");
     ASSERT_EQ(0, result) << (result == 0x100 ? "Failed to load ROM" : readMessage());
 }
