@@ -5,6 +5,7 @@
 #include "core/Ppu.hpp"
 #include "core/Cartridge.hpp"
 #include "core/Controllers.hpp"
+#include "core/Apu.hpp"
 #include "SdlResource.hpp"
 
 class Emulator
@@ -32,6 +33,7 @@ class Emulator
         std::shared_ptr<Ppu> ppu;
         std::shared_ptr<Cartridge> cartridge;
         std::shared_ptr<Controllers> controllers;
+        std::shared_ptr<Apu> apu;
 
         bool shouldRun;
 

@@ -5,8 +5,17 @@ Mmu::Mmu()
 {
 }
 
-Mmu::Mmu(const std::shared_ptr<Ppu> &ppu, const std::shared_ptr<Cartridge> &cartridge, const std::shared_ptr<Controllers>& controllers)
-    : ppu(ppu), cartridge(cartridge), controllers(controllers), internalRam(), resetSignalled(false), tickCounter(0)
+Mmu::Mmu(const std::shared_ptr<Ppu> &ppu,
+         const std::shared_ptr<Apu> &apu,
+         const std::shared_ptr<Cartridge> &cartridge, 
+         const std::shared_ptr<Controllers> &controllers)
+    : ppu(ppu)
+    , apu(apu)
+    , cartridge(cartridge)
+    , controllers(controllers)
+    , internalRam()
+    , resetSignalled(false)
+    , tickCounter(0)
 {
 }
 
@@ -39,6 +48,8 @@ u8 Mmu::readFromMemory(u16 addr)
     } else if(addr < 0x4018) {
         auto mmioAddr = addr & 0x1F;
         switch(mmioAddr) {
+            case 0x15:
+                result = apu->read();
             case 0x16:
             case 0x17:
                 result = controllers->read(mmioAddr & 0x1);
@@ -105,6 +116,7 @@ void Mmu::writeIntoMemory(u16 addr, u8 value)
                 break;
             
             default:
+                apu->write(mmioAddr, value);
                 break;
         }
     } else {
@@ -147,5 +159,5 @@ void Mmu::tick()
     for(auto i = 0; i < 3; i++) {
         ppu->tick();
     }
-    // TODO: APU cycle triggering
+    apu->tick();
 }

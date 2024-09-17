@@ -5,6 +5,11 @@
 Emulator::Emulator()
     : shouldRun(false)
 {
+    auto irqTriggerCallback = [this]() {
+        cpu->interrupt(InterruptType::IRQ);
+    };
+
+    apu = std::make_shared<Apu>(irqTriggerCallback);
     controllers = std::make_shared<Controllers>();
     cartridge = std::make_shared<Cartridge>();
     
@@ -17,7 +22,7 @@ Emulator::Emulator()
     };
 
     ppu = std::make_shared<Ppu>(cartridge, nmiTriggerCallback, vblankInterruptCallback);
-    mmu = std::make_shared<Mmu>(ppu, cartridge, controllers);
+    mmu = std::make_shared<Mmu>(ppu, apu, cartridge, controllers);
     cpu = std::make_shared<Cpu>(mmu);
 
     window = make_sdl_resource(SDL_CreateWindow, SDL_DestroyWindow, "Wasm-NES",

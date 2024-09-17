@@ -2,6 +2,7 @@
 
 #include "Types.hpp"
 #include "Ppu.hpp"
+#include "Apu.hpp"
 #include "Cartridge.hpp"
 #include "Controllers.hpp"
 #include <memory>
@@ -16,7 +17,8 @@ class Mmu
     public:
         Mmu();
 
-        Mmu(const std::shared_ptr<Ppu>& ppu, 
+        Mmu(const std::shared_ptr<Ppu>& ppu,
+            const std::shared_ptr<Apu>& apu,
             const std::shared_ptr<Cartridge>& cartridge,
             const std::shared_ptr<Controllers>& controllers);
 
@@ -32,6 +34,7 @@ class Mmu
 
     private:
         std::shared_ptr<Ppu> ppu;
+        std::shared_ptr<Apu> apu;
         std::shared_ptr<Cartridge> cartridge;
         std::shared_ptr<Controllers> controllers;
         std::array<u8, 0x800> internalRam;
