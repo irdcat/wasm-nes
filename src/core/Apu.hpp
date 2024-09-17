@@ -25,7 +25,7 @@ class Apu
         std::queue<float> getAudioQueue();
 
     private:
-        std::array<std::unique_ptr<AudioChannel>, 1> channels;
+        std::array<std::unique_ptr<AudioChannel>, 2> channels;
         std::function<void()> irqTriggerCallback;
         std::queue<float> audioQueue;
 

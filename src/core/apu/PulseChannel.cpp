@@ -1,5 +1,19 @@
 #include "PulseChannel.hpp"
 
+PulseChannel::PulseChannel(bool secondChannel)
+    : AudioChannel()
+    , registers()
+    , lengthCounter(0)
+    , waveCounter(0)
+    , envelope(0)
+    , envelopeDecay(0)
+    , phase(0)
+    , level(0)
+    , sweepDelay(0)
+    , secondChannel(secondChannel)
+{
+}
+
 void PulseChannel::write(u8 index, u8 value)
 {
     switch (index) {
