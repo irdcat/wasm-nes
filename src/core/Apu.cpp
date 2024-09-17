@@ -4,7 +4,8 @@
 
 Apu::Apu(const std::function<void()> &irqTriggerCallback)
     : channels({
-        std::make_unique<PulseChannel>()
+        std::make_unique<PulseChannel>(0),
+        std::make_unique<PulseChannel>(1)
     })
     , irqTriggerCallback(irqTriggerCallback)
     , registers()
@@ -92,8 +93,8 @@ void Apu::tick()
     }
 
     auto pulse1 = channels[0]->tick();
+    auto pulse2 = channels[1]->tick();
     // TODO: Replace with actual channel outputs
-    auto pulse2 = 0;
     auto triangle = 0;
     auto noise = 0;
     auto dmc = 0;

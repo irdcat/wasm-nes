@@ -6,7 +6,7 @@
 class PulseChannel : public AudioChannel
 {
     public:
-        PulseChannel() = default;
+        PulseChannel(bool secondChannel);
 
         ~PulseChannel() = default;
 
