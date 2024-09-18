@@ -462,10 +462,10 @@ void Ppu::decodeTiles()
             // Shift previously read tile pattern and attributes into internal shift registers
             if(shouldDecodeTile) {
                 // Multiplication by 0x10000 is an equivalent of shifting left by 16 bits
-                bgShiftPattern = (bgShiftPattern >> 16) | 0x00010000 * tilePattern;
+                bgShiftPattern = (bgShiftPattern >> 16) | 0x00010000u * tilePattern;
                 // Attributes for the 4 tiles are encoded into 2 bit variables.
                 // Multiplying it by 0x5555 will cause it to be spread and repeated across 16 bits.
-                bgShiftAttributes = (bgShiftAttributes >> 16) | tileAttributes * 0x55550000;
+                bgShiftAttributes = (bgShiftAttributes >> 16) | 0x55550000u * tileAttributes;
             }
             if (renderingPositionX == 257) {
                 // Reset pointer to OAM3
