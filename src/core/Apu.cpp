@@ -110,7 +110,7 @@ void Apu::tick()
     auto tndSample = safeDivide(159.79f, 100.f + safeDivide(1.0f, triangle / 8227.f + noise / 12241.f + dmc / 22638.f, -100.f), 0.f);
 
     auto sample = pulseSample + tndSample;
-    audioQueue.push(sample);
+    //audioQueue.push(sample);
 }
 
 std::queue<float> Apu::getAudioQueue()
