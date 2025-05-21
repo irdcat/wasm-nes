@@ -24,13 +24,13 @@ if(NOT TESTS)
     set(WASM_NES_COMPILE_OPTIONS
         -std=c++20
         -O3
-        -sUSE_SDL=2)
+        --use-port=sdl2)
     set(WASM_NES_LINK_OPTIONS
         -sWASM=1
         -sASSERTIONS=0
         -sASYNCIFY
         -sALLOW_MEMORY_GROWTH
-        -sUSE_SDL=2
+        --use-port=sdl2
         -sFORCE_FILESYSTEM=1
         -sEXPORTED_FUNCTIONS=_run,_loadRom
         -sEXPORTED_RUNTIME_METHODS=ccall)

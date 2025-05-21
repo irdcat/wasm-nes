@@ -786,7 +786,7 @@ u16 Ppu::resolveNametableAddress(u16 addr, MirroringType mirroringType)
             break;
         
         case SingleScreenHigh:
-            addr = addr & 0x3FF | 0x400;
+            addr = addr & 0x3FF + 0x400;
             break;
 
         default:
